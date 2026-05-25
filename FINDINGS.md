@@ -54,11 +54,6 @@ Research results, discoveries, and external content collected during project wor
 - **Date:** 2026-03-22
 - **Summary:** Canonical find-skills is at `vercel-labs/skills@find-skills`, installed via `npx skills add`. `chrisboden/find-skills` is NOT a valid package (just a README catalog). The skills CLI (`npx skills`) is a separate ecosystem from APM — deploys to `~/.agents/skills/` with symlinks into IDE skill dirs.
 
-### Xiaohongshu MCP options — research history
-- **Source:** Community repos, prior debugging, web search (2026-04-03).
-- **Date:** 2026-04-03
-- **Summary:** Headless Playwright MCPs (Node `@sillyl12324/xhs-mcp`, Python `xiaohongshu-mcp-server`) hit SSL strictness, partial page loads, and brittle login/signing. x-mcp Chrome extension + `mcp.aredink.com` hosted endpoint got page load timeouts. **Current approach:** [xpzouying/xiaohongshu-mcp](https://github.com/xpzouying/xiaohongshu-mcp) Go binary (~12.5k stars, March 2026 releases) — HTTP transport on `localhost:18060`, no Playwright dep. Binaries in `bin/`; `deploy.sh` now ensures the HTTP entry exists in both `~/.claude.json` and `~/.cursor/mcp.json`.
-
 ## Discoveries
 
 - **Observation:** APM and skills CLI coexist without conflict
@@ -78,7 +73,7 @@ Research results, discoveries, and external content collected during project wor
   **Impact:** Manual MCP entries survive deploy cycles.
 
 - **Observation:** Claude Code user-scoped MCP servers live in `~/.claude.json`, not `~/.claude/.mcp.json`
-  **Evidence:** `claude mcp add --scope user ...` wrote `xiaohongshu-mcp` into `~/.claude.json`.
+  **Evidence:** `claude mcp add --scope user ...` writes to `~/.claude.json`.
   **Impact:** Automation must target `~/.claude.json` for reproducible Claude MCP setup.
 
 - **Observation:** Kasetto's MCP merge does not overwrite existing keys
@@ -93,4 +88,3 @@ Research results, discoveries, and external content collected during project wor
 | Error | Context | Attempt | Resolution | Date |
 |-------|---------|---------|------------|------|
 | `chrisboden/find-skills` install failed | `apm install` — "Not a valid APM package" | 1: checked repo — no SKILL.md, just README | Removed from apm.yml; installed canonical version via `npx skills add vercel-labs/skills@find-skills -g -y` | 2026-03-22 |
-| `check_login_status` / login flow: **Page load timeout** | x-mcp HTTP MCP from Cursor after configuring extension + API key | 1: treat as extension-side navigation timeout | **Resolved by replacement** — switched to xpzouying/xiaohongshu-mcp Go binary | 2026-04-03 |

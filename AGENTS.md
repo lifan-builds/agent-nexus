@@ -1,23 +1,34 @@
 # Agent Guide
+<!-- context-harness:schema v2 -->
+
+## Context Contract
+- At session start/resume, read `NOW.md` first, then use the Context Index below to choose relevant `CONTEXT.md` sections.
+- Before planning or editing, respect `CONTEXT.md` `## Rules`.
+- If the user teaches a durable term, invariant, workflow, constraint, or
+  correction, update `CONTEXT.md` before it scrolls away.
+- Route task-local findings and decisions to `PLAN.md`; durable lessons to
+  `CONTEXT.md`.
+- After updating `CONTEXT.md`, run `node scripts/context-index.js update`.
+- Before ending, update `NOW.md` with current focus, blockers, next step, and
+  touched files.
 
 ## Project Overview
-`agent-nexus` is a centralized configuration repository and framework for managing AI agent environments across multiple IDEs. It provides a single manifest (`nexus.yml`) that declares packages (skills, hooks, commands), MCP servers, and deployment targets — then compiles and deploys everything to Claude Code, Cursor, and Google Antigravity from one place. The project is building its own framework ("nexus") to replace Microsoft's APM, with the goal of being the best tool in this space — better than both APM and Kasetto.
+`agent-nexus` is a centralized configuration repository and framework for managing AI agent environments across multiple IDEs. It provides a single manifest that declares packages (skills, hooks, commands), MCP servers, and deployment targets — then compiles and deploys everything to Claude Code, Cursor, Google Antigravity, and Codex from one place. The project is building its own framework ("nexus") to replace Microsoft's APM, with the goal of being the best tool in this space — better than both APM and Kasetto.
 
 ## Tech Stack
 - **nexus** — custom agent environment manager (manifest + CLI, replacing APM)
-- **Bash + jq + yq** — implementation stack for nexus CLI (zero Python/Node runtime deps)
+- **Python 3.10+** — single-file CLI (`nexus.py`), only dependency is PyYAML
 - **Markdown** for skill definitions (`SKILL.md`)
-- **YAML** for manifests (`nexus.yml`)
+- **YAML** for manifests (`nexus.example.yml`, plus gitignored personal manifests)
 - **Git** for package fetching (shallow clones at pinned refs)
 
 ## Project Structure
-- `nexus.yml`: The core manifest. Declares packages (GitHub repos or local paths), inline MCP servers, optional MCPs, and target IDEs. Replaces the old `apm.yml`.
-- `nexus.sh`: The nexus CLI entry point. Symlinked to `~/.local/bin/nexus` for global access. Run `nexus sync`, `nexus list`, `nexus doctor`, `nexus clean`.
-- `.nexus/`: Local cache and compiled output directory (gitignored). Contains:
-  - `cache/` — fetched packages keyed by `github.com/org/repo/commit-sha/`
-  - `compiled/` — intermediate build artifacts (per-IDE skills, merged hooks, MCP fragments)
-- `bin/`: Pre-built Go binaries — `xiaohongshu-mcp` (MCP server) from xpzouying/xiaohongshu-mcp.
-- `scripts/`: Helper scripts for optional services (`xhs-start`, `xhs-relogin`).
+- `nexus.example.yml`: Public template manifest checked into the repo.
+- `nexus.personal.yml`: Personal manifest (gitignored). Declares packages, inline MCP servers, optional MCPs, and target IDEs for this machine.
+- `nexus.example.yml`: Example manifest checked into the repo for reference.
+- `nexus.py`: The nexus CLI. Symlinked to `~/.local/bin/nexus` for global access. Run `nexus sync`, `nexus list`, `nexus doctor`, `nexus clean`.
+- `nexus.sh`: Legacy bash CLI (kept as backup, will be removed).
+- `.nexus/`: Local cache directory (gitignored). Contains fetched packages keyed by `github.com/org/repo/commit-sha/`.
 
 ## Installed Skills & MCP Servers
 
@@ -26,23 +37,25 @@
 | Package | Skill | Description |
 |---------|-------|-------------|
 | `fantasy-cc/context-harness` | context-harness | Project docs generation (AGENTS.md, PLANS.md, FINDINGS.md, EVALUATION.md, README.md) with auto-recovery hooks |
-| `obra/superpowers` | using-superpowers | Entry point for the superpowers workflow system |
-| `obra/superpowers` | brainstorming | Structured brainstorming methodology |
-| `obra/superpowers` | writing-plans | Plan creation and structuring |
-| `obra/superpowers` | executing-plans | Systematic plan execution |
-| `obra/superpowers` | test-driven-development | TDD workflow for agents |
-| `obra/superpowers` | systematic-debugging | Structured debugging methodology |
-| `obra/superpowers` | subagent-driven-development | Multi-agent orchestration patterns |
-| `obra/superpowers` | dispatching-parallel-agents | Parallel agent task distribution |
-| `obra/superpowers` | receiving-code-review | How to process code review feedback |
-| `obra/superpowers` | requesting-code-review | How to request and structure code reviews |
-| `obra/superpowers` | finishing-a-development-branch | Branch completion workflow |
-| `obra/superpowers` | using-git-worktrees | Git worktree patterns for agents |
-| `obra/superpowers` | verification-before-completion | Pre-completion verification checklist |
-| `obra/superpowers` | writing-skills | How to author new agent skills |
-| `find-skills` | find-skills | Discovers and installs skills from the open agent skills ecosystem (globally installed via skills CLI) |
+| `mattpocock/skills` | setup-matt-pocock-skills, diagnose, tdd, zoom-out, improve-codebase-architecture, grill-with-docs | Curated engineering workflow skills that consume context-harness docs |
 
-### MCP Servers (inline in nexus.yml)
+Additional packages (like `obra/superpowers`) can be added via `nexus.personal.yml` — see `nexus.example.yml` for a public template.
+
+## Agent skills
+
+### Issue tracker
+
+Issue workflow skills are not deployed right now. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Triage labels are intentionally unconfigured while issue workflow skills are disabled. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout. Context-harness owns root `CONTEXT.md`, `NOW.md`, and `PLAN.md`; Matt Pocock's engineering skills consume those docs. See `docs/agents/domain.md`.
+
+### MCP Servers (inline in personal manifest)
 
 | Name | Transport | Description |
 |------|-----------|-------------|
@@ -50,21 +63,18 @@
 | `playwright` | stdio | Browser automation via Playwright |
 | `context7` | stdio | Up-to-date library documentation retrieval |
 | `nitan-mcp` | stdio | Community MCP for Discourse integration |
-| `xiaohongshu-mcp` (optional) | sse | Xiaohongshu content API via local Go server on localhost:18060 |
 | `github-mcp` (optional) | stdio | GitHub API integration (requires GITHUB_TOKEN) |
-| `notion-mcp` (optional) | stdio | Notion workspace integration |
 
 ## Development Workflow
-- To add a package: Add a `repo:` entry under `packages:` in `nexus.yml`, then run `nexus sync`.
-- To add an inline MCP: Add to the `mcps:` section of `nexus.yml`. Use `optional: true` or place under `optional_mcps:` for interactive prompting.
+- To add a package: Add a `repo:` entry under `packages:` in `nexus.personal.yml`, then run `nexus sync`.
+- To add an inline MCP: Add to the `mcps:` section of `nexus.personal.yml`. Use `optional: true` or place under `optional_mcps:` for interactive prompting.
 - To add a local skill in development: Use `path: ./my-skill` under `packages:`.
 - To deploy everything: Run `nexus sync` (or `nexus sync --all` to auto-include optionals).
-- To install a skills-CLI skill globally: Run `npx skills add <repo>@<skill> -g -y`.
 
 ## Coding Conventions
 - Skills are directories containing a `SKILL.md` file. The directory name is the skill name.
 - Hooks are discovered from `hooks/hooks.json` (Claude Code format) and `hooks/hooks-cursor.json` (Cursor format) within packages.
-- `nexus.yml` is the single source of truth for all managed dependencies and MCP servers.
+- The active nexus manifest is the single source of truth for all managed dependencies and MCP servers. On this machine, `nexus.personal.yml` takes precedence over `nexus.yml`.
 - No package type classification — nexus auto-discovers all asset types (skills, hooks, commands, agents) from each package.
 
 ## Architecture Decisions
@@ -74,7 +84,22 @@
 - **Hook deduplication**: Hooks are deduplicated by content hash (minus metadata). Prevents the 42x duplication bug from APM.
 - **Security review gate**: Before writing MCP configs to global IDE files, nexus shows what commands will be registered and prompts for confirmation. Addresses a known Kasetto security gap (issue #15).
 - **Content-addressed cache**: Packages cached by commit SHA at `.nexus/cache/github.com/org/repo/sha/`. Immutable snapshots enable instant rollbacks and safe concurrent operations.
-- **Bash + jq + yq**: Zero Python/Node runtime dependencies for the tool itself. Single script distribution.
+- **Python single-file CLI**: Replaced bash+jq+inline-python with a single `nexus.py`. Only dependency is PyYAML. Eliminates ~60 subprocess spawns per sync, adds stale symlink/MCP pruning, and uses native data structures instead of JSON string concatenation.
 - **Global Proxy via symlinks**: This repository is the single point-of-truth; IDE global skill directories symlink into it.
 - **FINDINGS.md separation**: External/untrusted content is logged to FINDINGS.md (not PLANS.md) to prevent prompt injection via auto-read hooks.
-- **Xiaohongshu MCP**: Uses xpzouying/xiaohongshu-mcp Go binary (HTTP on localhost:18060) after headless Playwright approaches proved flaky. Declared as optional SSE MCP in nexus.yml.
+
+## Context Index
+<!-- context-harness:index:start -->
+Generated from `CONTEXT.md` by `node scripts/context-index.js update`.
+Use this index to open only the `CONTEXT.md` sections relevant to the task.
+
+- `NOW.md` - current focus, blockers, and next step. Read first on start/resume.
+- `CONTEXT.md#project` - project identity and purpose.
+- `CONTEXT.md#structure` - repo map and important directories.
+- `CONTEXT.md#rules` - hard constraints, habits, and objectives. Subsections: Never, Always, Objectives.
+- `CONTEXT.md#workflow` - setup, run, test, lint, and deploy commands.
+- `CONTEXT.md#language` - canonical terms and avoided names.
+- `CONTEXT.md#relationships` - durable invariants and domain relationships.
+- `CONTEXT.md#flagged-ambiguities` - resolved naming or meaning conflicts.
+- `CONTEXT.md#learned-patterns` - durable lessons from corrections or failed attempts.
+<!-- context-harness:index:end -->

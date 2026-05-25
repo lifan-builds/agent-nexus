@@ -1,6 +1,9 @@
-# nexus.yml — Agent environment manifest
+# nexus.example.yml — Agent environment manifest template
 # Defines packages, MCP servers, and target IDEs for cross-platform deployment.
 # Run `nexus sync` to fetch, compile, and deploy all assets.
+#
+# Copy this file to a gitignored personal manifest and customize for your setup:
+#   cp nexus.example.yml nexus.personal.yml
 
 name: agent-nexus
 version: 1.0.0
@@ -10,14 +13,27 @@ targets:
   - claude         # ~/.claude/skills/, ~/.claude.json
   - cursor         # ~/.cursor/skills/, ~/.cursor/mcp.json
   - antigravity    # ~/.gemini/antigravity/skills/, ~/.gemini/antigravity/mcp_config.json
+  - codex          # ~/.codex/skills/, ~/.codex/config.toml
 
 # Packages from GitHub (auto-discovered: skills, hooks, commands, agents)
 packages:
   - repo: fantasy-cc/context-harness
     ref: main
+    # Optional: deploy only selected hook assets from a package.
+    # Omit hooks to deploy all discovered hook assets for configured targets.
+    # Use hooks: false or hooks: [] to disable hooks from this package.
+    # hooks:
+    #   - codex
 
   - repo: obra/superpowers
     ref: v5.0.4
+    # Optional: deploy only selected skills from a package.
+    # skills:
+    #   - systematic-debugging
+    #   - verification-before-completion
+    # Optional: fetch only selected paths from large repos.
+    # sparse_paths:
+    #   - skills/systematic-debugging
 
 # Inline MCP server declarations (no separate repo needed)
 mcps:
@@ -27,21 +43,11 @@ mcps:
 
   - name: playwright
     command: npx
-    args: ["-y", "@modelcontextprotocol/server-playwright"]
+    args: ["-y", "@playwright/mcp@latest"]
 
   - name: context7
     command: npx
     args: ["-y", "@upstash/context7-mcp@latest"]
-
-  - name: nitan-mcp
-    command: npx
-    args: ["-y", "@nitansde/mcp@latest"]
-
-  - name: xiaohongshu-mcp
-    url: "http://localhost:18060/sse"
-    transport: sse
-    optional: true
-    description: "Xiaohongshu content API (requires local Go server)"
 
 # Optional MCPs (prompted interactively, or auto-included with --all)
 optional_mcps:
@@ -51,8 +57,3 @@ optional_mcps:
     env:
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
     description: "GitHub API access (requires GITHUB_TOKEN)"
-
-  - name: notion-mcp
-    command: npx
-    args: ["-y", "notion-mcp"]
-    description: "Notion workspace integration"

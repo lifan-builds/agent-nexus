@@ -17,12 +17,6 @@ This document contains objective grading criteria and specific verification cont
 - **Verification Method**: Run `nexus sync` and verify: (1) packages fetched to `.nexus/cache/`, (2) skills symlinked to `~/.claude/skills/`, `~/.cursor/skills/`, `~/.gemini/antigravity/skills/`, (3) MCP configs merged into all target IDE config files, (4) hooks aggregated and deduplicated, (5) `nexus.lock.yml` generated with deployment paths. Compare output against current `deploy.sh` for parity.
 - **Acceptance Threshold**: `nexus sync` produces identical functional output to `deploy.sh` for skills and MCPs. Hook entries reduced from 84 to 2 in `.cursor/hooks.json`. Security review gate displays changes before writing.
 
-### [Xiaohongshu MCP via Go binary]
-- **Verification Method**: Run `scripts/xhs-relogin` to authenticate, start server with `scripts/xhs-start`, then invoke `check_login_status` and `search_feeds` from Claude Code or Cursor.
-- **Acceptance Threshold**: At least one non-error tool response with the Go binary server running.
-
 ## Evaluation Log
 - [2026-03-26] - [Extract Context-Harness to GitHub] - [Grade: Pass] - [Skill successfully extracted to separate Git repo, published, and linked via APM.]
-- [2026-04-03] - [Xiaohongshu MCP via x-mcp (Cursor)] - [Grade: Fail] - [MCP appears in Cursor; `check_login_status` returned page load timeout — replaced with Go binary approach.]
-- [2026-04-04] - [Xiaohongshu MCP via Go binary] - [Grade: Pass] - [Validated in Claude Code: `check_login_status` succeeded and `search_feeds` returned live results.]
 - [2026-04-12] - [Nexus v0.1 — Manifest + Documentation] - [Grade: Pass] - [nexus.yml created with all deps migrated. All 5 project docs updated. APM artifacts removed. .gitignore updated.]

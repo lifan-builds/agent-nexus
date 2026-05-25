@@ -332,13 +332,14 @@ sync_mcps() {
 
         info "Syncing MCPs to $mcp_path..."
 
-        python3 - "$manifest_json" "$mcp_path" "$accepted_optional" "$target" <<'PYEOF'
+        python3 - "$manifest_json" "$mcp_path" "$accepted_optional" "$target" "$REPO_DIR" <<'PYEOF'
 import sys, json, os, shutil
 
 manifest = json.loads(sys.argv[1])
 mcp_path = sys.argv[2]
 accepted_csv = sys.argv[3]
 target = sys.argv[4]
+repo_dir = sys.argv[5]
 accepted_optional = set(accepted_csv.split(",")) if accepted_csv else set()
 
 # Collect MCPs: core (non-optional) + accepted optional from mcps + optional_mcps
@@ -368,8 +369,14 @@ else:
     os.makedirs(os.path.dirname(mcp_path), exist_ok=True)
     config = {}
 
-if "mcpServers" not in config:
-    config["mcpServers"] = {}
+# Claude Code stores MCPs per-project inside ~/.claude.json
+# Other targets use a flat mcpServers at the file root
+if target == "claude":
+    projects = config.setdefault("projects", {})
+    project = projects.setdefault(repo_dir, {})
+    servers = project.setdefault("mcpServers", {})
+else:
+    servers = config.setdefault("mcpServers", {})
 
 # Standard PATH for restricted environments
 path_env = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -380,7 +387,7 @@ for mcp in all_mcps:
 
     # SSE/HTTP transport
     if mcp.get("transport") == "sse" or "url" in mcp:
-        entry = {"url": mcp["url"]}
+        entry = {"type": "sse", "url": mcp["url"]}
     else:
         # stdio transport
         command = mcp.get("command", "npx")
@@ -389,7 +396,7 @@ for mcp in all_mcps:
             if resolved:
                 command = resolved
 
-        entry = {"command": command, "args": mcp.get("args", [])}
+        entry = {"type": "stdio", "command": command, "args": mcp.get("args", [])}
 
         # Build env
         env = dict(mcp.get("env") or {})
@@ -397,15 +404,15 @@ for mcp in all_mcps:
             env["PATH"] = path_env
         entry["env"] = env
 
-    if name in config["mcpServers"]:
-        if config["mcpServers"][name] == entry:
+    if name in servers:
+        if servers[name] == entry:
             skipped.append(name)
             continue
         updated.append(name)
     else:
         added.append(name)
 
-    config["mcpServers"][name] = entry
+    servers[name] = entry
 
 # Write back
 with open(mcp_path, "w") as f:
@@ -520,49 +527,6 @@ print(yaml.dump(lock, default_flow_style=False, sort_keys=False))
 PYEOF
 }
 
-# ---------- Global skills (find-skills etc.) ----------
-deploy_global_skills() {
-    local targets_json="$1"
-    local targets
-    targets=$(echo "$targets_json" | jq -r '.[]')
-
-    if [ ! -d "$HOME/.agents/skills" ]; then
-        return 0
-    fi
-
-    for skill_dir in "$HOME/.agents/skills"/*/; do
-        [ -d "$skill_dir" ] || continue
-        local skill_name
-        skill_name="$(basename "$skill_dir")"
-
-        for target in $targets; do
-            local target_dir="$(skill_path_for "$target")"
-            [ -z "$target_dir" ] && continue
-            mkdir -p "$target_dir"
-
-            local link="$target_dir/$skill_name"
-            if [ -L "$link" ] || [ ! -e "$link" ]; then
-                ln -snf "$skill_dir" "$link"
-            fi
-        done
-        ok "$skill_name -> global ($(echo "$targets" | tr '\n' ',' | sed 's/,$//'))"
-    done
-}
-
-# ---------- Install global skills CLI packages ----------
-install_global_skills() {
-    info "Checking global skills..."
-    if command -v npx &>/dev/null; then
-        if [ -d "$HOME/.agents/skills/find-skills" ]; then
-            unchanged "find-skills (already installed)"
-        else
-            npx skills add vercel-labs/skills@find-skills -g -y 2>/dev/null
-            ok "find-skills installed"
-        fi
-    else
-        warn "npx not found, skipping global skills installation"
-    fi
-}
 
 # ============================================================
 # SUBCOMMANDS
@@ -718,10 +682,6 @@ cmd_sync() {
 
     info "Syncing MCP servers..."
     sync_mcps "$manifest_json" "$targets_json" "$optional_csv"
-
-    info "Deploying global skills..."
-    deploy_global_skills "$targets_json"
-    install_global_skills
 
     # Phase 6: Lockfile
     info "Generating lockfile..."

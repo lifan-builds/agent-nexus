@@ -20,12 +20,13 @@ __pycache__/
 # Compiled outputs (reproduced by nexus sync)
 .claude/
 .cursor/
+.codex/
 .github/
 .agent/
 .vscode/mcp.json
 
-# Xiaohongshu MCP binaries (platform-specific, downloaded by deploy.sh)
-bin/
-
-# Xiaohongshu MCP local session state
-cookies.json
+# Personal nexus config (use nexus.example.yml as template)
+nexus.personal.yml
+nexus.personal.lock.yml
+nexus.yml
+nexus.lock.yml

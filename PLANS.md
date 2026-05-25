@@ -26,7 +26,6 @@ Build a best-in-class agent environment manager ("nexus") that deploys skills, h
 - [x] Installed `obra/superpowers` via APM
 - [x] Extracted `context-harness` to GitHub (`fantasy-cc/context-harness`)
 - [x] Cursor MCP merge into `~/.cursor/mcp.json`
-- [x] Xiaohongshu MCP via Go binary (localhost:18060)
 - [x] Fixed Antigravity MCP loading (npx path resolution)
 
 ### Phase 1: Nexus design + manifest + docs (current)
@@ -77,11 +76,10 @@ Build a best-in-class agent environment manager ("nexus") that deploys skills, h
 - **Dual Package Manager** (2026-03): APM for structured skills; skills CLI for vercel-labs ecosystem.
 - **Puppeteer to Playwright** (2026-03): Switched to Anthropic's official playwright MCP server.
 - **FINDINGS.md as security boundary** (2026-03): External content separated from PLANS.md to prevent prompt injection.
-- **Xiaohongshu via Go binary** (2026-04): Replaced flaky headless Playwright and x-mcp approaches.
 - **APM to nexus migration** (2026-04-12): APM's bugs (hook duplication, hybrid package misclassification) and limitations (no inline MCPs, no security review) made it a liability. deploy.sh was already doing most of the work. Building nexus as a unified replacement that also surpasses Kasetto.
 - **Unified package model** (2026-04-12): Eliminated package type classification. Auto-discover all asset types via file patterns. A package can provide skills + hooks + commands + agents + MCPs.
 - **Security review gate** (2026-04-12): Show MCP commands before writing to global config. Addresses Kasetto's security gap.
-- **Shell prototype, Go for v1.0** (2026-04-12): Bash script for rapid prototyping and design iteration. Go chosen over Rust for v1.0 rewrite because: single static binary like Rust, much faster to write (no borrow checker), go-git for native git ops, built-in YAML/JSON, easy cross-compilation, already in the project stack (xiaohongshu-mcp binary). Shell stays as the working spec.
+- **Shell prototype, Go for v1.0** (2026-04-12): Bash script for rapid prototyping and design iteration. Go chosen over Rust for v1.0 rewrite because: single static binary like Rust, much faster to write (no borrow checker), go-git for native git ops, built-in YAML/JSON, easy cross-compilation. Shell stays as the working spec.
 
 ## Outcomes & Retrospective
 
@@ -95,14 +93,7 @@ Researched the ecosystem (Kasetto, APM, skills CLI, killer-skills). Identified K
 Implemented `nexus.sh` with all 4 subcommands (sync, list, doctor, clean). Key results: 15 skills deployed (vs 1 with APM), hooks deduplicated from 84 to 1, MCP configs synced to 3 IDEs, lockfile generated with full discovery metadata. Security review gate shows MCP commands before writing. Removed `deploy.sh`. Added `nexus` to global PATH.
 
 ## Context and Orientation
-The repository contains `nexus.yml` as the central manifest, `deploy.sh` as the legacy deployment script (being replaced), `bin/` for optional Go binaries, and `scripts/` for helper utilities. The `.nexus/` directory (gitignored) will hold the package cache and compiled artifacts once the CLI is implemented. Skills are also installed globally via the skills CLI (`~/.agents/skills/`). The context-harness skill maintains five documents (AGENTS.md, PLANS.md, FINDINGS.md, EVALUATION.md, README.md).
-
-## Plan of Work
-1. **Implement `nexus.sh`** — the core CLI script with `sync`, `list`, `doctor`, and `clean` subcommands. Start with `sync` as it's the critical path.
-2. **Validate against deploy.sh** — ensure nexus sync produces identical output for skills and MCPs.
-3. **Remove deploy.sh** — once nexus sync is validated end-to-end.
-4. **Add convenience commands** — `nexus init`, `nexus add`, `nexus update`.
-5. **Evaluate rewrite** — if bash + jq + yq proves limiting, consider Rust/Go for v2.
+The repository contains `nexus.yml` as the central manifest (gitignored; use `nexus.example.yml` as template) and `nexus.sh` as the CLI entry point. The `.nexus/` directory (gitignored) holds the package cache and compiled artifacts. Skills are also installed globally via the skills CLI (`~/.agents/skills/`). The context-harness skill maintains five documents (AGENTS.md, PLANS.md, FINDINGS.md, EVALUATION.md, README.md).
 
 ## Validation and Acceptance
 - `nexus.yml` is valid YAML and contains all dependencies from the old `apm.yml`

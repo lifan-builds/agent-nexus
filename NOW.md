@@ -1,15 +1,15 @@
 # Now
 
 ## Current Focus
-Impeccable was added to the personal Nexus config and deployed to all configured IDE targets.
+Removed `context-grill` from Nexus-managed deployments and kept Matt Pocock's `grilling` as the active grill-loop skill.
 
 ## Active Blockers
-- None for the Impeccable deployment.
+- None for the `context-grill` removal; all configured targets now report 13 managed skill symlinks.
 - Agent-Reach still needs user authentication for credential-gated channels if those channels are used.
 
 ## Immediate Next Step
-Restart AI IDEs to pick up the new `impeccable` skill; use `$impeccable` in Codex or the equivalent skill command in other targets.
+Restart AI IDEs to pick up the pruned skill set if they were running during sync.
 
 ## Session State
-- Last modified: 2026-05-23
-- Files touched: nexus.py, tests/test_nexus.py, nexus.personal.yml, nexus.personal.lock.yml, PLAN.md, NOW.md
+- Last modified: 2026-06-22
+- Files touched: AGENTS.md, nexus.personal.yml, nexus.personal.lock.yml, PLAN.md, NOW.md

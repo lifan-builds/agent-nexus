@@ -184,6 +184,9 @@ class Config:
             return Path(codex_home) / "hooks.json"
         return Path.home() / ".codex" / "hooks.json"
 
+    def generated_skill_path(self, target: str, skill_name: str) -> Path:
+        return self.nexus_dir / "generated" / target / "skills" / skill_name
+
     def load_lockfile(self) -> dict | None:
         if not self.lockfile_path.exists():
             return None
@@ -387,8 +390,78 @@ def apply_package_filters(discovery: dict, pkg_spec: dict) -> dict:
         for hook_name, key in discovered_hooks.items():
             if hook_name not in allowed:
                 discovery[key] = None
+    if "targets" in pkg_spec:
+        discovery["targets"] = pkg_spec["targets"]
+    if "skill_overrides" in pkg_spec:
+        discovery["skill_overrides"] = pkg_spec["skill_overrides"] or {}
     return discovery
 
+
+def package_targets(pkg: dict, default_targets: list[str]) -> list[str]:
+    configured = pkg.get("targets")
+    if configured is None:
+        return list(default_targets)
+    if configured is False:
+        return []
+    if isinstance(configured, str):
+        requested = [configured]
+    else:
+        requested = list(configured or [])
+    default_set = set(default_targets)
+    return [target for target in requested if target in default_set]
+
+
+def _configured_targets(value) -> list[str]:
+    if value is None:
+        return []
+    if value is False:
+        return []
+    if isinstance(value, str):
+        return [value]
+    return list(value or [])
+
+
+def skill_override(pkg: dict, skill_name: str) -> dict:
+    overrides = pkg.get("skill_overrides") or {}
+    override = overrides.get(skill_name)
+    return override if isinstance(override, dict) else {}
+
+
+def overlay_targets(pkg: dict, skill_name: str, default_targets: list[str]) -> list[str]:
+    override = skill_override(pkg, skill_name)
+    if not isinstance(override.get("agents_openai"), dict):
+        return []
+
+    pkg_targets = package_targets(pkg, default_targets)
+    requested = override.get("targets")
+    if requested is None:
+        return list(pkg_targets)
+
+    allowed = set(pkg_targets)
+    return [target for target in _configured_targets(requested) if target in allowed]
+
+
+def skill_overlays(pkg: dict, skill_name: str, default_targets: list[str]) -> list[dict]:
+    return [
+        {"skill": skill_name, "target": target, "type": "agents_openai"}
+        for target in overlay_targets(pkg, skill_name, default_targets)
+    ]
+
+
+def generated_skill_path(cfg, target: str, skill_name: str) -> Path:
+    if hasattr(cfg, "generated_skill_path"):
+        return cfg.generated_skill_path(target, skill_name)
+    nexus_dir = getattr(cfg, "nexus_dir", cfg.repo_dir / ".nexus")
+    return nexus_dir / "generated" / target / "skills" / skill_name
+
+
+def deep_merge(base, override):
+    if isinstance(base, dict) and isinstance(override, dict):
+        merged = dict(base)
+        for key, value in override.items():
+            merged[key] = deep_merge(merged.get(key), value)
+        return merged
+    return override
 
 # ---------------------------------------------------------------------------
 # Deployer — skills, hooks, MCPs, with pruning
@@ -406,15 +479,16 @@ class Deployer:
                 name = skill["name"]
                 path = Path(skill["path"])
                 deployed_to = []
-                for target in self.cfg.targets:
+                for target in package_targets(pkg, self.cfg.targets):
                     target_dir = self.cfg.skill_path(target)
                     if not target_dir:
                         continue
+                    deploy_path = self._skill_deploy_path(pkg, skill, target, path)
                     target_dir.mkdir(parents=True, exist_ok=True)
                     link = target_dir / name
                     if link.is_symlink() or not link.exists():
                         link.unlink(missing_ok=True)
-                        link.symlink_to(path)
+                        link.symlink_to(deploy_path)
                         deployed_to.append(target)
                     else:
                         warn(f"{link} exists and is not a symlink, skipping")
@@ -422,26 +496,81 @@ class Deployer:
                 count += 1
         return count
 
+    def _skill_deploy_path(self, pkg: dict, skill: dict, target: str, source_path: Path) -> Path:
+        name = skill["name"]
+        if target not in overlay_targets(pkg, name, self.cfg.targets):
+            return source_path
+        override = skill_override(pkg, name)
+        return self._materialize_skill_overlay(source_path, name, target, override)
+
+    def _materialize_skill_overlay(
+        self,
+        source_path: Path,
+        skill_name: str,
+        target: str,
+        override: dict,
+    ) -> Path:
+        generated = generated_skill_path(self.cfg, target, skill_name)
+        if generated.is_symlink() or generated.is_file():
+            generated.unlink()
+        elif generated.exists():
+            shutil.rmtree(generated)
+
+        generated.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(source_path, generated, symlinks=True)
+
+        agents_openai = override.get("agents_openai") or {}
+        if agents_openai:
+            metadata_path = generated / "agents" / "openai.yaml"
+            metadata_path.parent.mkdir(parents=True, exist_ok=True)
+            existing = self._load_yaml_mapping(metadata_path)
+            merged = deep_merge(existing, agents_openai)
+            self._write_yaml(metadata_path, merged)
+        return generated
+
+    @staticmethod
+    def _load_yaml_mapping(path: Path) -> dict:
+        if not path.exists():
+            return {}
+        try:
+            import yaml
+
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    @staticmethod
+    def _write_yaml(path: Path, data: dict):
+        import yaml
+
+        with open(path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(data, f, default_flow_style=False, sort_keys=True)
+
     def prune_skills(self, discoveries: list[dict], prev_lock: dict | None):
         """Remove symlinks for packages no longer in the manifest."""
         if not prev_lock:
             return
 
-        current_skills = set()
+        current_by_target = {target: set() for target in self.cfg.targets}
         for pkg in discoveries:
-            for skill in pkg.get("skills", []):
-                current_skills.add(skill["name"])
+            for target in package_targets(pkg, self.cfg.targets):
+                for skill in pkg.get("skills", []):
+                    current_by_target.setdefault(target, set()).add(skill["name"])
 
-        prev_skills = set()
+        prev_by_target = {target: set() for target in self.cfg.targets}
         for pkg in prev_lock.get("packages", []):
-            for s in pkg.get("discovered", {}).get("skills", []):
-                prev_skills.add(s)
-
-        stale = prev_skills - current_skills
-        if not stale:
-            return
+            deployed_to = pkg.get("deployed_to") or self.cfg.targets
+            for target in deployed_to:
+                if target not in prev_by_target:
+                    continue
+                for skill_name in pkg.get("discovered", {}).get("skills", []):
+                    prev_by_target[target].add(skill_name)
 
         for target in self.cfg.targets:
+            stale = prev_by_target.get(target, set()) - current_by_target.get(target, set())
+            if not stale:
+                continue
             target_dir = self.cfg.skill_path(target)
             if not target_dir or not target_dir.exists():
                 continue
@@ -458,11 +587,12 @@ class Deployer:
         cursor_hooks = []
         codex_hooks = []
         for pkg in discoveries:
-            if "claude" in self.cfg.targets and pkg.get("hooks_claude"):
+            targets = package_targets(pkg, self.cfg.targets)
+            if "claude" in targets and pkg.get("hooks_claude"):
                 claude_hooks.append(Path(pkg["hooks_claude"]))
-            if "cursor" in self.cfg.targets and pkg.get("hooks_cursor"):
+            if "cursor" in targets and pkg.get("hooks_cursor"):
                 cursor_hooks.append(Path(pkg["hooks_cursor"]))
-            if "codex" in self.cfg.targets and pkg.get("hooks_codex"):
+            if "codex" in targets and pkg.get("hooks_codex"):
                 codex_hooks.append(pkg)
 
         if cursor_hooks:
@@ -671,6 +801,7 @@ class Deployer:
             entry = self._build_mcp_entry(mcp, target=target)
 
             if name in servers:
+                entry = self._merge_mcp_entry(servers[name], entry)
                 if servers[name] == entry:
                     unchanged(f"{name} (unchanged)")
                     continue
@@ -685,8 +816,9 @@ class Deployer:
 
     def _sync_mcps_for_codex(self, all_mcps: list[dict], mcp_path: Path):
         mcp_path.parent.mkdir(parents=True, exist_ok=True)
-        existing = mcp_path.read_text() if mcp_path.exists() else ""
-        existing = self._strip_codex_managed_block(existing).rstrip()
+        original = mcp_path.read_text() if mcp_path.exists() else ""
+        existing_managed = self._parse_codex_managed_env(original)
+        existing = self._strip_codex_managed_block(original).rstrip()
 
         lines = [
             "",
@@ -696,6 +828,8 @@ class Deployer:
         for mcp in all_mcps:
             name = mcp["name"]
             entry = self._build_mcp_entry(mcp)
+            if name in existing_managed:
+                entry = self._merge_mcp_entry(existing_managed[name], entry)
             lines.extend(self._codex_toml_for_mcp(name, entry))
             ok(f"{name} (synced)")
         lines.append("# END NEXUS MANAGED MCP SERVERS")
@@ -714,6 +848,66 @@ class Deployer:
         if stop == -1:
             return content[:start]
         return content[:start] + content[stop + len(end):]
+
+    @classmethod
+    def _parse_codex_managed_env(cls, content: str) -> dict:
+        begin = "# BEGIN NEXUS MANAGED MCP SERVERS"
+        end = "# END NEXUS MANAGED MCP SERVERS"
+        start = content.find(begin)
+        if start == -1:
+            return {}
+        stop = content.find(end, start)
+        if stop == -1:
+            block = content[start:]
+        else:
+            block = content[start:stop]
+
+        import re
+
+        section_re = re.compile(r'^\[mcp_servers\.("(?:\\.|[^"])*"|[A-Za-z0-9_-]+)(\.env)?\]$')
+        value_re = re.compile(r'^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+?)\s*$')
+        managed: dict[str, dict] = {}
+        current_name = None
+        in_env = False
+
+        for raw_line in block.splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            section = section_re.match(line)
+            if section:
+                current_name = cls._parse_toml_key(section.group(1))
+                in_env = bool(section.group(2))
+                if current_name:
+                    managed.setdefault(current_name, {})
+                    if in_env:
+                        managed[current_name].setdefault("env", {})
+                continue
+            if not current_name or not in_env:
+                continue
+            value = value_re.match(line)
+            if value:
+                managed[current_name].setdefault("env", {})[value.group(1)] = cls._parse_toml_scalar(value.group(2))
+        return managed
+
+    @staticmethod
+    def _parse_toml_key(value: str) -> str:
+        if value.startswith('"'):
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                return ""
+        return value
+
+    @staticmethod
+    def _parse_toml_scalar(value: str):
+        value = value.strip().rstrip(",")
+        if value.startswith('"'):
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                return value.strip('"')
+        return value
 
     @staticmethod
     def _toml_string(value: str) -> str:
@@ -734,6 +928,8 @@ class Deployer:
             if entry.get("type") == "sse":
                 lines.append('type = "sse"')
             lines.append(f"url = {cls._toml_string(entry['url'])}")
+            if entry.get("oauth_resource"):
+                lines.append(f"oauth_resource = {cls._toml_string(entry['oauth_resource'])}")
             headers = entry.get("headers") or {}
             if headers:
                 lines.append("http_headers = { " + ", ".join(
@@ -764,6 +960,8 @@ class Deployer:
                 "type": mcp.get("transport", "sse"),
                 "url": mcp["url"],
             }
+            if mcp.get("oauth_resource"):
+                entry["oauth_resource"] = mcp["oauth_resource"]
             if mcp.get("headers"):
                 entry["headers"] = mcp["headers"]
             return entry
@@ -778,6 +976,38 @@ class Deployer:
         if "PATH" not in env:
             env["PATH"] = STANDARD_PATH
         return {"type": "stdio", "command": command, "args": mcp.get("args", []), "env": env}
+
+    @classmethod
+    def _merge_mcp_entry(cls, existing, desired):
+        """Merge a desired MCP entry without dropping local-only keys or secrets."""
+        if not isinstance(existing, dict) or not isinstance(desired, dict):
+            return desired
+
+        merged = dict(existing)
+        for key, value in desired.items():
+            if key == "env" and isinstance(value, dict):
+                merged[key] = cls._merge_mcp_env(existing.get(key), value)
+            else:
+                merged[key] = value
+        return merged
+
+    @staticmethod
+    def _merge_mcp_env(existing, desired):
+        if not isinstance(existing, dict):
+            return dict(desired)
+        merged = dict(existing)
+        for key, value in desired.items():
+            current = existing.get(key)
+            if (
+                isinstance(current, str)
+                and isinstance(value, str)
+                and value.startswith("${")
+                and value.endswith("}")
+            ):
+                merged[key] = current
+            else:
+                merged[key] = value
+        return merged
 
     def prune_mcps(self, current_names: set[str], prev_lock: dict | None):
         """Remove MCP entries no longer in the manifest."""
@@ -794,6 +1024,9 @@ class Deployer:
         for target in self.cfg.targets:
             mcp_path = self.cfg.mcp_path(target)
             if not mcp_path or not mcp_path.exists():
+                continue
+            if self.cfg.mcp_format(target) == "codex_toml":
+                self._prune_codex_mcps(mcp_path, stale)
                 continue
             try:
                 with open(mcp_path) as f:
@@ -820,11 +1053,81 @@ class Deployer:
                     json.dump(config, f, indent=2)
                     f.write("\n")
 
+    def _prune_codex_mcps(self, mcp_path: Path, stale: set[str]):
+        original = mcp_path.read_text()
+        existing_managed = self._parse_codex_managed_entries(original)
+        kept = [
+            (name, lines)
+            for name, lines in existing_managed
+            if name not in stale
+        ]
+        removed_names = {name for name, _lines in existing_managed if name in stale}
+        if not removed_names:
+            return
+
+        existing = self._strip_codex_managed_block(original).rstrip()
+        lines = [
+            "",
+            "# BEGIN NEXUS MANAGED MCP SERVERS",
+            f"# This block is generated by agent-nexus. Edit {self.cfg.yml_path.name} instead.",
+        ]
+        for _name, entry_lines in kept:
+            lines.extend(entry_lines)
+        lines.append("# END NEXUS MANAGED MCP SERVERS")
+        mcp_path.write_text(existing + "\n" + "\n".join(lines) + "\n")
+
+        for name in sorted(removed_names):
+            removed(f"{name} from codex MCP config")
+
+    @classmethod
+    def _parse_codex_managed_entries(cls, content: str) -> list[tuple[str, list[str]]]:
+        begin = "# BEGIN NEXUS MANAGED MCP SERVERS"
+        end = "# END NEXUS MANAGED MCP SERVERS"
+        start = content.find(begin)
+        if start == -1:
+            return []
+        stop = content.find(end, start)
+        block = content[start:] if stop == -1 else content[start:stop]
+
+        entries = []
+        current_name = None
+        current_lines = []
+        for raw_line in block.splitlines():
+            line = raw_line.strip()
+            name = cls._codex_mcp_section_name(line)
+            if name and not line.endswith(".env]"):
+                if current_name:
+                    entries.append((current_name, current_lines))
+                current_name = name
+                current_lines = ["", raw_line]
+                continue
+            if current_name:
+                current_lines.append(raw_line)
+        if current_name:
+            entries.append((current_name, current_lines))
+        return entries
+
+    @staticmethod
+    def _codex_mcp_section_name(line: str) -> str:
+        import re
+
+        match = re.match(r'^\[mcp_servers\.("(?:\\.|[^"])*"|[A-Za-z0-9_-]+)(?:\.env)?\]$', line)
+        if not match:
+            return ""
+        return Deployer._parse_toml_key(match.group(1))
+
 
 # ---------------------------------------------------------------------------
 # Lockfile
 # ---------------------------------------------------------------------------
-def generate_lockfile(discoveries: list[dict], manifest: dict, targets: list[str]) -> dict:
+def generate_lockfile(
+    discoveries: list[dict],
+    manifest: dict,
+    targets: list[str],
+    repo_dir: Path | None = None,
+    managed_mcps: list[dict] | None = None,
+) -> dict:
+    repo_dir = repo_dir or Path.cwd()
     lock = {
         "lockfile_version": 1,
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -833,7 +1136,7 @@ def generate_lockfile(discoveries: list[dict], manifest: dict, targets: list[str
         "mcps": {"managed": []},
     }
     for pkg in discoveries:
-        lock["packages"].append({
+        entry = {
             "name": pkg["name"],
             "path": pkg["path"],
             "discovered": {
@@ -844,15 +1147,26 @@ def generate_lockfile(discoveries: list[dict], manifest: dict, targets: list[str
                 "commands": pkg.get("commands", []),
                 "agents": pkg.get("agents", []),
             },
-            "deployed_to": targets,
-        })
-    for mcp in manifest.get("mcps", []):
+            "deployed_to": package_targets(pkg, targets),
+        }
+        overlays = []
+        for skill in pkg.get("skills", []):
+            for overlay in skill_overlays(pkg, skill["name"], targets):
+                overlay_path = (
+                    repo_dir / ".nexus" / "generated" / overlay["target"] / "skills" / skill["name"]
+                )
+                overlays.append({**overlay, "path": str(overlay_path)})
+        if overlays:
+            entry["overlays"] = overlays
+        lock["packages"].append(entry)
+    if managed_mcps is None:
+        managed_mcps = [mcp for mcp in manifest.get("mcps", []) if not mcp.get("optional")]
+
+    for mcp in managed_mcps:
         entry = {"name": mcp["name"]}
         if mcp.get("optional"):
             entry["optional"] = True
         lock["mcps"]["managed"].append(entry)
-    for mcp in manifest.get("optional_mcps", []):
-        lock["mcps"]["managed"].append({"name": mcp["name"], "optional": True})
     return lock
 
 
@@ -872,7 +1186,7 @@ def write_lockfile(lock: dict, path: Path):
 # ---------------------------------------------------------------------------
 def show_review(all_mcps: list[dict]):
     print(file=sys.stderr)
-    info("Security review — MCP servers to be registered:")
+    info("Security review - MCP servers to be registered:")
     print(file=sys.stderr)
     for mcp in all_mcps:
         name = mcp["name"]
@@ -926,7 +1240,9 @@ def collect_mcps(cfg: Config, accepted_optional: list[str]) -> list[dict]:
             result.append(mcp)
     for mcp in cfg.optional_mcps:
         if mcp["name"] in accepted_set:
-            result.append(mcp)
+            included = dict(mcp)
+            included["optional"] = True
+            result.append(included)
     return result
 
 
@@ -1000,17 +1316,30 @@ def cmd_sync(cfg: Config, args):
             return
     elif args.dry_run:
         show_review(all_mcps)
-        info("Dry run — no changes written.")
+        info("Dry run - no target configs or lockfiles written.")
         print(file=sys.stderr)
         info("Would deploy:")
         for pkg in discoveries:
+            targets = package_targets(pkg, cfg.targets)
+            target_label = ",".join(targets) or "none"
             for s in pkg["skills"]:
-                print(f"  skill: {s['name']}", file=sys.stderr)
-            if "claude" in cfg.targets and pkg.get("hooks_claude"):
+                overlays = skill_overlays(pkg, s["name"], cfg.targets)
+                inline_overlay = ""
+                if len(overlays) == 1 and targets == [overlays[0]["target"]]:
+                    inline_overlay = f" (overlay: {overlays[0]['type']})"
+                print(f"  skill: {s['name']} -> {target_label}{inline_overlay}", file=sys.stderr)
+                for overlay in overlays:
+                    if inline_overlay:
+                        continue
+                    print(
+                        f"    overlay: {overlay['target']} {overlay['type']}",
+                        file=sys.stderr,
+                    )
+            if "claude" in targets and pkg.get("hooks_claude"):
                 print(f"  hooks: {pkg['name']} -> claude", file=sys.stderr)
-            if "cursor" in cfg.targets and pkg.get("hooks_cursor"):
+            if "cursor" in targets and pkg.get("hooks_cursor"):
                 print(f"  hooks: {pkg['name']} -> cursor", file=sys.stderr)
-            if "codex" in cfg.targets and pkg.get("hooks_codex"):
+            if "codex" in targets and pkg.get("hooks_codex"):
                 print(f"  hooks: {pkg['name']} -> codex ({cfg.codex_hooks_path()})", file=sys.stderr)
         return
 
@@ -1035,7 +1364,7 @@ def cmd_sync(cfg: Config, args):
 
     # Phase 4: Lockfile
     info("Generating lockfile...")
-    lock = generate_lockfile(discoveries, cfg.data, cfg.targets)
+    lock = generate_lockfile(discoveries, cfg.data, cfg.targets, cfg.repo_dir, all_mcps)
     write_lockfile(lock, cfg.lockfile_path)
     ok(f"{cfg.lockfile_path.name} written")
 
@@ -1047,7 +1376,11 @@ def cmd_sync(cfg: Config, args):
             shutil.rmtree(p)
 
     # Summary
-    target_names = ", ".join(cfg.targets)
+    skill_counts = {target: 0 for target in cfg.targets}
+    for pkg in discoveries:
+        for target in package_targets(pkg, cfg.targets):
+            skill_counts[target] = skill_counts.get(target, 0) + len(pkg.get("skills", []))
+    skill_summary = ", ".join(f"{target}={count}" for target, count in skill_counts.items())
     mcp_paths = []
     for t in cfg.targets:
         p = cfg.mcp_path(t)
@@ -1056,7 +1389,7 @@ def cmd_sync(cfg: Config, args):
 
     print(file=sys.stderr)
     info("Sync complete!")
-    print(f"  {total_skills} skills deployed to: {target_names}", file=sys.stderr)
+    print(f"  {total_skills} skills processed; deployed counts: {skill_summary}", file=sys.stderr)
     print(f"  MCP servers synced to: {', '.join(mcp_paths)}", file=sys.stderr)
     if accepted_optional:
         print(f"  Optional MCPs included: {' '.join(accepted_optional)}", file=sys.stderr)
@@ -1117,7 +1450,7 @@ def cmd_list(cfg: Config, _args):
 
 def cmd_doctor(cfg: Config, _args):
     print()
-    info(f"nexus doctor — v{NEXUS_VERSION}")
+    info(f"nexus doctor - v{NEXUS_VERSION}")
     print()
 
     # Manifest
@@ -1139,8 +1472,10 @@ def cmd_doctor(cfg: Config, _args):
         warn("Package cache: empty (run nexus sync)")
 
     # Lockfile
+    lock = None
     if cfg.lockfile_path.exists():
         ok(f"{cfg.lockfile_path.name} exists")
+        lock = cfg.load_lockfile()
     else:
         warn(f"{cfg.lockfile_path.name} missing (run nexus sync)")
 
@@ -1156,6 +1491,48 @@ def cmd_doctor(cfg: Config, _args):
             warn(f"{target} skills: {len(links)} symlinks ({len(broken)} broken)")
         else:
             ok(f"{target} skills: {len(links)} symlinks")
+
+    # Skill metadata overlays
+    overlay_count = 0
+    overlay_failures = 0
+    if lock:
+        for pkg in lock.get("packages", []):
+            for overlay in pkg.get("overlays", []):
+                overlay_count += 1
+                skill_name = overlay.get("skill")
+                target = overlay.get("target")
+                overlay_type = overlay.get("type")
+                path = Path(overlay.get("path", ""))
+                if not path.is_dir():
+                    warn(f"{target} overlay {skill_name}: generated directory missing ({path})")
+                    overlay_failures += 1
+                    continue
+
+                skill_dir = cfg.skill_path(target)
+                link = skill_dir / skill_name if skill_dir and skill_name else None
+                if not link or not link.is_symlink():
+                    warn(f"{target} overlay {skill_name}: skill link missing")
+                    overlay_failures += 1
+                elif link.resolve(strict=False) != path.resolve(strict=False):
+                    warn(f"{target} overlay {skill_name}: skill link points to {link.resolve(strict=False)}")
+                    overlay_failures += 1
+
+                if not (path / "SKILL.md").is_file():
+                    warn(f"{target} overlay {skill_name}: SKILL.md missing")
+                    overlay_failures += 1
+
+                if overlay_type == "agents_openai":
+                    metadata_path = path / "agents" / "openai.yaml"
+                    try:
+                        import yaml
+
+                        with open(metadata_path, encoding="utf-8") as f:
+                            yaml.safe_load(f)
+                    except Exception:
+                        warn(f"{target} overlay {skill_name}: invalid agents/openai.yaml")
+                        overlay_failures += 1
+        if overlay_count and overlay_failures == 0:
+            ok(f"Skill overlays: {overlay_count} generated")
 
     # MCP configs
     for target in cfg.targets:
@@ -1261,6 +1638,23 @@ def cmd_clean(cfg: Config, _args):
     info("Clean complete. Run 'nexus sync' to rebuild.")
 
 
+def cmd_init(cfg: Config, args):
+    target = cfg.repo_dir / "nexus.personal.yml"
+    source = cfg.repo_dir / "nexus.example.yml"
+
+    if not source.is_file():
+        print(f"Error: {source.name} not found in {cfg.repo_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    if target.exists() and not args.force:
+        print(f"Error: {target.name} already exists. Use 'nexus init --force' to overwrite it.", file=sys.stderr)
+        sys.exit(1)
+
+    shutil.copy2(source, target)
+    ok(f"Created {target.name} from {source.name}")
+    print("Edit nexus.personal.yml for your machine, then run 'nexus sync --dry-run'.", file=sys.stderr)
+
+
 # ============================================================
 # MAIN
 # ============================================================
@@ -1274,7 +1668,7 @@ def resolve_repo_dir() -> Path:
 def main():
     parser = argparse.ArgumentParser(
         prog="nexus",
-        description=f"nexus v{NEXUS_VERSION} — Agent environment manager",
+        description=f"nexus v{NEXUS_VERSION} - Agent environment manager",
     )
     sub = parser.add_subparsers(dest="command")
 
@@ -1286,6 +1680,8 @@ def main():
     sub.add_parser("list", help="Show installed packages, skills, and MCP servers")
     sub.add_parser("doctor", help="Run diagnostics and health checks")
     sub.add_parser("clean", help="Remove all nexus-managed artifacts")
+    sp_init = sub.add_parser("init", help="Create nexus.personal.yml from the example manifest")
+    sp_init.add_argument("--force", action="store_true", help="Overwrite an existing nexus.personal.yml")
     sub.add_parser("version", help="Show version")
 
     args = parser.parse_args()
@@ -1296,6 +1692,7 @@ def main():
         "list": cmd_list,
         "doctor": cmd_doctor,
         "clean": cmd_clean,
+        "init": cmd_init,
         "version": lambda _c, _a: print(f"nexus v{NEXUS_VERSION}"),
     }
 

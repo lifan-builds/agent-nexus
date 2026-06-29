@@ -2,7 +2,7 @@
 <!-- context-harness:schema v3 -->
 
 ## Project
-`agent-nexus` is a centralized agent environment manager that deploys skills, hooks, and MCP servers to all AI IDEs (Claude Code, Cursor, Google Antigravity) from a single `nexus.yml` manifest. The CLI (`nexus.py`) handles the full lifecycle: fetch packages from GitHub, auto-discover all asset types, deduplicate hooks, security-review MCP configs, and deploy. It replaces Microsoft's APM (buggy: hook duplication, hybrid package misclassification) and aims to surpass Kasetto (gaps: no hooks, no hybrid packages, no security gate). Tech stack: Python 3.10+ single-file CLI, PyYAML only, YAML manifests, Git shallow clones. Go rewrite (v1.0) is the next major milestone.
+`agent-nexus` is a centralized agent environment manager that deploys skills, hooks, and MCP servers to AI IDEs (Claude Code, Cursor, Google Antigravity, Codex) from a single manifest. The CLI (`nexus.py`) handles the full lifecycle: initialize a personal manifest, fetch packages from GitHub, auto-discover all asset types, deduplicate hooks, security-review MCP configs, preserve local MCP secrets during merge, and deploy. It replaces the local APM-based workflow; public positioning should emphasize verified Nexus behavior rather than stale negative competitor line-item claims. Tech stack: Python 3.10+ single-file CLI, PyYAML only, YAML manifests, Git shallow clones. Go rewrite (v1.0) is a later milestone, not required for release readiness.
 
 ## Structure
 ```
@@ -20,7 +20,7 @@ nexus.lock.yml    # Generated lockfile (resolved commits, hashes, deploy paths)
 
 ### Never
 1. Never classify packages by type — auto-discover all assets (skills, hooks, commands, agents) from file patterns (SKILL.md, hooks.json, etc.)
-2. Never write to global IDE config files without showing a security review gate first (addresses Kasetto issue #15)
+2. Never write to global IDE config files without showing a security review gate first
 3. Never add Python dependencies beyond PyYAML to `nexus.py`
 
 ### Always
@@ -35,8 +35,8 @@ nexus.lock.yml    # Generated lockfile (resolved commits, hashes, deploy paths)
 3. No duplicate hook entries in any IDE `hooks.json` after sync
 
 ## Workflow
-- Setup: `pip install pyyaml && ln -sf $(pwd)/nexus.py ~/.local/bin/nexus`
-- Run: `nexus sync`
+- Setup: `pip install pyyaml && python nexus.py init && ln -sf $(pwd)/nexus.py ~/.local/bin/nexus`
+- Run: `nexus sync --dry-run`, then `nexus sync` after reviewing MCP commands
 - Test: `nexus doctor`
 - Lint: `ruff check nexus.py` (once ruff is added)
 
@@ -58,7 +58,9 @@ nexus.lock.yml    # Generated lockfile (resolved commits, hashes, deploy paths)
 ## Learned Patterns
 - Hook aggregation must preserve script execution paths relative to package cache dir — superpowers hooks read their own SKILL.md at runtime via relative path.
 - Codex hook deployment must preserve unmanaged user hooks by only stripping commands marked with `--nexus-package`, and tests must use a temporary `CODEX_HOME` instead of the real `~/.codex` config.
+- Skill metadata overlays must materialize under `.nexus/generated/<target>/skills/<skill>/` and target symlinks should point there; never write overlay metadata into immutable `.nexus/cache/` package snapshots.
 - Kasetto's MCP merge preserves existing keys (no overwrite) — nexus follows the same pattern to protect local secrets.
+- Codex MCP pruning must edit only the Nexus managed TOML block, remove stale managed server sections listed in the previous lockfile, and preserve content outside the block.
 - `~/.claude.json` is the target for user-scoped Claude Code MCP servers (not `~/.claude/.mcp.json`).
 - FINDINGS.md as security boundary: external/untrusted content goes here, never into PLANS.md — prevents prompt injection via auto-read hooks.
 - APM classifies hybrid packages by dominant type, missing assets — nexus always runs full auto-discovery regardless of what a package "looks like".
@@ -81,7 +83,7 @@ nexus.lock.yml    # Generated lockfile (resolved commits, hashes, deploy paths)
   touched files.
 
 ## Project Overview
-`agent-nexus` is a centralized configuration repository and framework for managing AI agent environments across multiple IDEs. It provides a single manifest that declares packages (skills, hooks, commands), MCP servers, and deployment targets — then compiles and deploys everything to Claude Code, Cursor, Google Antigravity, and Codex from one place. The project is building its own framework ("nexus") to replace Microsoft's APM, with the goal of being the best tool in this space — better than both APM and Kasetto.
+`agent-nexus` is a centralized configuration repository and framework for managing AI agent environments across multiple IDEs. It provides a single manifest that declares packages (skills, hooks, commands), MCP servers, and deployment targets — then compiles and deploys everything to Claude Code, Cursor, Google Antigravity, and Codex from one place. The project is building its own framework ("nexus") to replace the local APM-based workflow, with public positioning based on verified Nexus behavior rather than stale competitor claims.
 
 ## Tech Stack
 - **nexus** — custom agent environment manager (manifest + CLI, replacing APM)
@@ -104,7 +106,7 @@ nexus.lock.yml    # Generated lockfile (resolved commits, hashes, deploy paths)
 
 | Package | Skill | Description |
 |---------|-------|-------------|
-| `lifan-builds/context-harness` | context-harness, context-init, context-launch, context-catch-up, context-maintain, context-handoff | Project context docs and context maintenance workflow skills with Codex hooks; `context-grill` is intentionally excluded in favor of Matt Pocock's `grilling` |
+| `lifan-builds/context-harness` | context-harness, context-init, context-catch-up, set-goal, context-maintain, context-upgrade | Project context docs, goal setting, upgrade, and context maintenance workflow skills with Codex hooks; removed legacy stubs are intentionally not deployed |
 | `mattpocock/skills` | domain-modeling, improve-codebase-architecture, codebase-design, grill-me, grilling | Curated engineering workflow skills; latest upstream removed `zoom-out` and split reusable design/grilling helpers into separate skills |
 
 Additional packages (like `obra/superpowers`) can be added via `nexus.personal.yml` — see `nexus.example.yml` for a public template.
@@ -146,11 +148,11 @@ Single-context layout. Context-harness owns root `CONTEXT.md`, `NOW.md`, and `PL
 - No package type classification — nexus auto-discovers all asset types (skills, hooks, commands, agents) from each package.
 
 ## Architecture Decisions
-- **APM to nexus migration**: APM misclassified hybrid packages (superpowers' 14 skills were never deployed because APM labeled it `hook_package`), created 42 duplicate hook entries (no dedup), and couldn't declare inline MCPs. `deploy.sh` was already doing most of the real work. We're building nexus to replace both APM and deploy.sh with a unified tool.
+- **APM to nexus migration**: APM misclassified hybrid packages (superpowers' 14 skills were never deployed because APM labeled it `hook_package`), created duplicate hook entries (no dedup), and couldn't declare inline MCPs. `deploy.sh` was already doing most of the real work. Nexus replaces both APM and deploy.sh with a unified tool.
 - **Unified package model**: A package can provide any combination of skills, hooks, commands, agents, and MCPs. No type classification — auto-discover via file patterns (SKILL.md, hooks.json, etc.).
 - **Inline MCP declarations**: Most MCP servers are just `npx <package>`. Declaring them directly in the manifest eliminates the need for separate git repos.
 - **Hook deduplication**: Hooks are deduplicated by content hash (minus metadata). Prevents the 42x duplication bug from APM.
-- **Security review gate**: Before writing MCP configs to global IDE files, nexus shows what commands will be registered and prompts for confirmation. Addresses a known Kasetto security gap (issue #15).
+- **Security review gate**: Before writing MCP configs to global IDE files, nexus shows what commands will be registered and prompts for confirmation. README/release copy should describe this as verified Nexus behavior, not as an unverified current competitor gap.
 - **Content-addressed cache**: Packages cached by commit SHA at `.nexus/cache/github.com/org/repo/sha/`. Immutable snapshots enable instant rollbacks and safe concurrent operations.
 - **Python single-file CLI**: Replaced bash+jq+inline-python with a single `nexus.py`. Only dependency is PyYAML. Eliminates ~60 subprocess spawns per sync, adds stale symlink/MCP pruning, and uses native data structures instead of JSON string concatenation.
 - **Global Proxy via symlinks**: This repository is the single point-of-truth; IDE global skill directories symlink into it.

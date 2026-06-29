@@ -1,124 +1,200 @@
 # Agent Nexus
 
-A framework and configuration repository for managing AI agent environments across multiple IDEs. Define your skills, hooks, and MCP servers once in a nexus manifest — then deploy to **Claude Code**, **Cursor**, **Google Antigravity**, **Codex**, and more from a single command.
+Agent Nexus is a Python CLI for managing AI agent environments from one
+versioned manifest. It fetches packages, discovers their assets, deploys skills
+and hooks to supported IDEs, merges MCP server configuration, and writes a
+lockfile that shows what was installed where.
+
+Nexus is not a replacement for native Codex, Claude, Cursor, or Kasetto
+workflows. It is a small cross-IDE deployment layer for developers who want one
+repo-local source of truth for repeatable agent setup.
 
 ## Quick Start
 
+Prerequisites:
+
+- Python 3.10+
+- PyYAML: `python -m pip install pyyaml`
+- Git
+- Node.js only for MCP servers that run through `npx`
+
 ```bash
 git clone https://github.com/lifan-builds/agent-nexus.git ~/Project/agent-nexus
 cd ~/Project/agent-nexus
-cp nexus.example.yml nexus.personal.yml
-pip install pyyaml
+python nexus.py init
+python nexus.py sync --dry-run
 python nexus.py sync
+python nexus.py doctor
 ```
 
-`nexus sync` fetches declared packages, discovers skills/hooks/MCPs, previews
-security-sensitive MCP changes, and deploys approved assets to your configured
-agent IDEs.
+Expected first dry run:
 
-## What Nexus Manages
+```text
+==> Security review - MCP servers to be registered:
 
-- **Skills** - reusable agent workflows discovered from package contents
-- **Hooks** - deduplicated automation deployed to supported IDEs
-- **MCP servers** - merged into existing global configs without overwriting local secrets
-- **Package cache** - content-addressed snapshots under `.nexus/cache/`
-- **Context systems** - project context via packages such as `context-harness`
+    sequential-thinking            stdio: npx -y @modelcontextprotocol/server-sequential-thinking
+    playwright                     stdio: npx -y @playwright/mcp@latest
+    context7                       stdio: npx -y @upstash/context7-mcp@latest
 
-## Overview
+==> Dry run - no target configs or lockfiles written.
+==> Would deploy:
+  skill: context-harness -> claude,cursor,antigravity,codex
+  skill: context-init -> claude,cursor,antigravity,codex
+  skill: context-catch-up -> claude,cursor,antigravity,codex
+  skill: set-goal -> claude,cursor,antigravity,codex
+  skill: context-maintain -> claude,cursor,antigravity,codex
+  skill: context-upgrade -> claude,cursor,antigravity,codex
+  hooks: context-harness -> codex (~/.codex/hooks.json)
+```
 
-Agent Nexus is building the best tool for unified AI agent environment management. It auto-discovers all asset types from packages (skills, hooks, commands, agents), declares MCP servers inline, deduplicates hooks, and includes a security review gate before writing to your global IDE configs.
+`nexus init` creates `nexus.personal.yml` from `nexus.example.yml`. Edit that
+personal manifest for your machine before the first real sync.
 
-### Why Nexus?
+## What Nexus Does
 
-| Feature | APM | Kasetto | **Nexus** |
-|---------|-----|---------|-----------|
-| Hybrid packages (skills + hooks + MCPs) | No | No | **Yes** |
-| Inline MCP declarations | No | No | **Yes** |
-| Hook management + deduplication | Buggy (42x duplication) | Not implemented | **Yes** |
-| Security review before deploy | No | No ([issue #15](https://github.com/pivoshenko/kasetto/issues/15)) | **Yes** |
-| Optional/conditional deps | No | No | **Yes** |
-| Project context system | No | No | **Yes** (via context-harness) |
-| Auto-discover package assets | No (type classification) | No (manual listing) | **Yes** |
+- Uses one YAML manifest for packages, MCP servers, optional MCPs, and targets.
+- Fetches GitHub packages into immutable `.nexus/cache/` snapshots keyed by
+  commit SHA.
+- Auto-discovers package assets from files instead of requiring package type
+  classification.
+- Deploys skills by symlink to the configured IDE targets.
+- Merges MCP server configs while preserving unmanaged servers and local env
+  secrets.
+- Aggregates hooks and deduplicates them by normalized content.
+- Writes `nexus.lock.yml` or `nexus.personal.lock.yml` with discovered assets,
+  target deployment, and generated overlay paths.
+- Supports target-specific skill metadata overlays, including Codex
+  `agents/openai.yaml` policy/interface metadata.
 
-### Supported IDEs
-- **Claude Code** — skills, MCP servers, hooks
-- **Cursor** — skills, MCP servers, hooks
-- **Google Antigravity** — skills, MCP servers
-- **Codex** — skills, MCP servers
+## Target And Asset Matrix
 
-## Getting Started
+| Surface | Nexus behavior | Claude Code | Cursor | Google Antigravity | Codex |
+| --- | --- | --- | --- | --- | --- |
+| Skills | Discovered by `SKILL.md`; deployed as managed symlinks | `~/.claude/skills/` | `~/.cursor/skills/` | `~/.gemini/antigravity/skills/` | `~/.codex/skills/` |
+| Hooks | Discovered from target hook files; deduplicated before write | copied to repo `.github/hooks/` | merged to repo `.cursor/hooks.json` | not deployed | merged to `~/.codex/hooks.json` or `$CODEX_HOME/hooks.json` |
+| MCP servers | Declared inline in manifest; review shown before write | project entry in `~/.claude.json` | `~/.cursor/mcp.json` | `~/.gemini/antigravity/mcp_config.json` | managed TOML block in `~/.codex/config.toml` |
+| Commands | Discovered from `commands/*.md` and recorded in lockfile | deployment pending | deployment pending | deployment pending | deployment pending |
+| Agents | Discovered from `agents/*.md` and recorded in lockfile | deployment pending | deployment pending | deployment pending | deployment pending |
+| Plugins | Not managed as native plugin bundles | use native plugin system | use native extensions/rules | use native config | use native Codex plugins |
+| Config merge | Preserves unmanaged config and local-only keys | yes | yes | yes | preserves content outside Nexus managed block |
+| Lockfile | Records resolved package path, discovered assets, deployment targets, and overlays | yes | yes | yes | yes |
 
-### Prerequisites
-- **Python 3.10+** with **PyYAML** (`pip install pyyaml`)
-- **Git**
-- **Node.js 18+** (for MCP servers that use npx)
+## Security Model
 
-### Installation & Deployment
+Read [docs/security-model.md](docs/security-model.md) before running a real
+`sync` against a personal machine. In short:
+
+- `sync --dry-run` may populate `.nexus/cache/`, prints MCP review output, and
+  exits before writing target IDE config or lockfiles.
+- A real `sync` prompts before registering executable MCP commands unless
+  `--yes` is passed.
+- Existing MCP servers not declared in the manifest stay in place.
+- Existing env values are kept when the manifest uses `${VAR}` placeholders, so
+  a local token is not replaced by a literal placeholder.
+- Codex MCP config is isolated in a `BEGIN NEXUS MANAGED MCP SERVERS` block.
+- Hooks marked with `--nexus-package` are treated as Nexus-managed; unmanaged
+  user hooks are preserved.
+
+## Ecosystem Positioning
+
+Current public docs for Kasetto, Codex, Claude Code, and Cursor all describe
+native or declarative ways to manage agent capabilities. Nexus should be chosen
+for its repo-local implementation details, not because another tool is assumed
+to lack a feature.
+
+Use Nexus when you want:
+
+- One manifest checked in with this repository.
+- Package auto-discovery across skills, hooks, commands, and agents.
+- Hook lifecycle cleanup and deduplication across managed packages.
+- MCP security review before executable config is written.
+- Target-specific deployment and metadata overlays.
+- Lockfile traceability for every sync.
+- Context Harness deployment as a normal package.
+
+Use native plugin systems when you want marketplace distribution, IDE-specific
+UI, or first-party install/update flows. Use Kasetto when you want its Rust
+binary, broader agent preset catalog, and ecosystem conventions.
+
+## Demo Proof
+
+See [docs/demo-transcript.md](docs/demo-transcript.md) for a release-readiness
+transcript covering:
+
+- `nexus init`
+- `sync --dry-run` security review
+- real `sync` lifecycle
+- hook deduplication
+- MCP merge behavior
+- lockfile output
+- `doctor`
+- Context Harness deployment
+
+## Manifest Basics
+
+```yaml
+name: agent-nexus
+version: 1.0.0
+
+targets:
+  - claude
+  - cursor
+  - antigravity
+  - codex
+
+packages:
+  - repo: lifan-builds/context-harness
+    ref: main
+    hooks:
+      - codex
+
+mcps:
+  - name: sequential-thinking
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+```
+
+Package entries can also use `targets`, `skills`, `sparse_paths`, and
+`skill_overrides`. See [nexus.example.yml](nexus.example.yml) for the full
+template.
+
+## Troubleshooting
+
+`Error: PyYAML is required`
+
+Run:
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/lifan-builds/agent-nexus.git ~/Project/agent-nexus
-cd ~/Project/agent-nexus
-
-# 2. Copy the example config and customize for your machine
-cp nexus.example.yml nexus.personal.yml
-
-# 3. Add nexus to your PATH
-mkdir -p ~/.local/bin
-ln -snf "$(pwd)/nexus.py" ~/.local/bin/nexus
-
-# 4. Deploy everything
-nexus sync
+python -m pip install pyyaml
 ```
 
-`nexus sync` automates the entire setup:
-1. Fetches packages from GitHub into `.nexus/cache/` (content-addressed by commit SHA).
-2. Auto-discovers all assets in each package (skills, hooks, commands, agents).
-3. Prunes stale skill symlinks and MCP entries removed since last sync.
-4. Symlinks skills to all target IDE directories.
-5. Aggregates and deduplicates hooks across packages.
-6. Shows a security review of MCP changes before writing to global configs.
-7. Merges MCP server configs into Claude (`~/.claude.json`), Cursor (`~/.cursor/mcp.json`), and Antigravity (`~/.gemini/antigravity/mcp_config.json`).
-8. Generates a lockfile tracking what was deployed where.
+`Error: git is required`
 
-## Managed Assets
+Install Git and make sure it is on `PATH`.
 
-### Skills (example config)
+`npx` MCP servers fail after sync
 
-| Package | Skills | Description |
-|---------|--------|-------------|
-| `fantasy-cc/context-harness` | 1 | Project docs generation and context management |
-| `obra/superpowers` | 14 | TDD, brainstorming, code review, debugging, worktrees, parallel agents, and more |
+Install Node.js or change the MCP entry to a command available on your machine.
 
-### MCP Servers
+`nexus doctor` reports missing MCP config
 
-| Name | Transport | Description |
-|------|-----------|-------------|
-| `sequential-thinking` | stdio | Structured reasoning |
-| `playwright` | stdio | Browser automation |
-| `context7` | stdio | Library documentation retrieval |
-| `nitan-mcp` | stdio | Discourse integration |
-| `github-mcp` | stdio (optional) | GitHub API integration |
+Run `python nexus.py sync --dry-run` first, review the MCP commands, then run
+`python nexus.py sync` if the review is acceptable.
 
-## Project Structure
+`nexus.personal.yml already exists`
 
-- `nexus.example.yml` — Public template manifest for the repo.
-- `nexus.personal.yml` — Gitignored personal manifest. Define your packages, MCP servers, and targets here.
-- `.nexus/` — Package cache and compiled artifacts (gitignored).
-- `AGENTS.md` — AI agent context for this repository.
-- `PLANS.md` — Active development roadmap.
-- `FINDINGS.md` — Research logs and discovery notes.
-- `EVALUATION.md` — Verification contracts and evaluation log.
+`nexus init` refuses to overwrite personal config. Use `python nexus.py init
+--force` only when you want to replace it with the example template.
 
 ## Development
 
-To add a new package:
-1. Add a `repo:` entry under `packages:` in `nexus.personal.yml`.
-2. Run `nexus sync` to fetch, discover, and deploy.
+Run focused verification:
 
-To add an inline MCP server:
-1. Add to the `mcps:` section of `nexus.personal.yml`.
-2. Run `nexus sync`.
+```bash
+python -m pytest tests
+python -m py_compile nexus.py
+python nexus.py sync --dry-run
+python nexus.py doctor
+```
 
----
-*Maintained by lfan. Powered by nexus.*
+The Python CLI intentionally has one runtime dependency: PyYAML.

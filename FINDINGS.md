@@ -8,6 +8,13 @@ Research results, discoveries, and external content collected during project wor
 
 ## Research & References
 
+### Release comparison refresh
+- **Source:** https://github.com/pivoshenko/kasetto, https://developers.openai.com/codex/concepts/customization, https://code.claude.com/docs/en/plugins, https://docs.anthropic.com/en/docs/claude-code/hooks, https://cursor.com/docs/context/mcp
+- **Date:** 2026-06-29
+- **Summary:** Public docs now describe broad native/declarative agent customization surfaces across the ecosystem. Kasetto presents itself as a declarative Rust tool for configuring multiple AI coding agents with commands including `sync`, `list`, `doctor`, and `clean`, and advertises a wide agent preset catalog. OpenAI Codex docs describe repo instructions and customization surfaces; Claude Code docs describe native plugin and hook surfaces; Cursor docs expose MCP/rules documentation through a dynamic site. The release README should avoid stale negative line-item claims unless a claim is re-verified against current docs immediately before publishing.
+- **README-safe conclusions:** Position Nexus around verified local behavior: one repo-local manifest, asset auto-discovery, hook lifecycle/dedupe, MCP review and merge behavior, target filtering, lockfile traceability, skill metadata overlays, and Context Harness deployment. Do not claim Kasetto, Codex, Claude, or Cursor lack a feature unless that exact claim is refreshed and cited.
+- **Notes:** The local Codex manual helper could not fetch through the restricted sandbox; escalation was unavailable in this session. Official OpenAI web docs were used as the bounded fallback for README positioning.
+
 ### Kasetto — declarative AI agent environment manager
 - **Source:** https://github.com/pivoshenko/kasetto, https://dev.to/pivoshenko/kasetto-declarative-ai-agent-environment-manager-written-in-rust-34kf
 - **Date:** 2026-04-12
@@ -65,7 +72,7 @@ Research results, discoveries, and external content collected during project wor
   **Impact:** No need for separate settings.json hook configuration for skill-defined hooks.
 
 - **Observation:** APM resolves GitHub dependencies directly without needing a local path override
-  **Evidence:** Set `fantasy-cc/context-harness` in `apm.yml`, and `apm install` dynamically pulled it into `.github/skills`.
+  **Evidence:** Historical pre-rename test used the old `context-harness` GitHub path in `apm.yml`, and `apm install` dynamically pulled it into `.github/skills`. Current public manifests should use `lifan-builds/context-harness`.
   **Impact:** Enables smooth extraction of custom generic skills to public Github packages.
 
 - **Observation:** `deploy.sh` MCP merge preserves servers not listed in the manifest

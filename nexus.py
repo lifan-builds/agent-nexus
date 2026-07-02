@@ -23,8 +23,8 @@ NEXUS_VERSION = "0.2.0"
 TARGET_REGISTRY = {
     "claude": {
         "skills": Path.home() / ".claude" / "skills",
-        "mcp": Path.home() / ".claude.json",
-        "mcp_format": "claude_json",
+        "mcp": Path.home() / ".claude" / ".mcp.json",
+        "mcp_format": "mcp_servers_json",
     },
     "cursor": {
         "skills": Path.home() / ".cursor" / "skills",
@@ -788,13 +788,7 @@ class Deployer:
         else:
             mcp_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Claude stores MCPs per-project; others use flat mcpServers
-        if target == "claude":
-            projects = config.setdefault("projects", {})
-            project = projects.setdefault(str(self.cfg.repo_dir), {})
-            servers = project.setdefault("mcpServers", {})
-        else:
-            servers = config.setdefault("mcpServers", {})
+        servers = config.setdefault("mcpServers", {})
 
         for mcp in all_mcps:
             name = mcp["name"]
@@ -1034,12 +1028,7 @@ class Deployer:
             except (json.JSONDecodeError, OSError):
                 continue
 
-            if target == "claude":
-                servers = (config.get("projects", {})
-                           .get(str(self.cfg.repo_dir), {})
-                           .get("mcpServers", {}))
-            else:
-                servers = config.get("mcpServers", {})
+            servers = config.get("mcpServers", {})
 
             changed = False
             for name in stale:
@@ -1549,12 +1538,7 @@ def cmd_doctor(cfg: Config, _args):
             else:
                 with open(mcp_path) as f:
                     data = json.load(f)
-                if target == "claude":
-                    count = len((data.get("projects", {})
-                                 .get(str(cfg.repo_dir), {})
-                                 .get("mcpServers", {})))
-                else:
-                    count = len(data.get("mcpServers", {}))
+                count = len(data.get("mcpServers", {}))
             ok(f"{target} MCP config: {count} servers ({mcp_path})")
         except (json.JSONDecodeError, OSError, ValueError):
             warn(f"{target} MCP config: invalid config ({mcp_path})")

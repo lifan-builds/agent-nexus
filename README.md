@@ -72,7 +72,7 @@ personal manifest for your machine before the first real sync.
 | --- | --- | --- | --- | --- | --- |
 | Skills | Discovered by `SKILL.md`; deployed as managed symlinks | `~/.claude/skills/` | `~/.cursor/skills/` | `~/.gemini/antigravity/skills/` | `~/.codex/skills/` |
 | Hooks | Discovered from target hook files; deduplicated before write | copied to repo `.github/hooks/` | merged to repo `.cursor/hooks.json` | not deployed | merged to `~/.codex/hooks.json` or `$CODEX_HOME/hooks.json` |
-| MCP servers | Declared inline in manifest; review shown before write | project entry in `~/.claude.json` | `~/.cursor/mcp.json` | `~/.gemini/antigravity/mcp_config.json` | managed TOML block in `~/.codex/config.toml` |
+| MCP servers | Declared inline in manifest; review shown before write | global `~/.claude/.mcp.json` | `~/.cursor/mcp.json` | `~/.gemini/antigravity/mcp_config.json` | managed TOML block in `~/.codex/config.toml` |
 | Commands | Discovered from `commands/*.md` and recorded in lockfile | deployment pending | deployment pending | deployment pending | deployment pending |
 | Agents | Discovered from `agents/*.md` and recorded in lockfile | deployment pending | deployment pending | deployment pending | deployment pending |
 | Plugins | Not managed as native plugin bundles | use native plugin system | use native extensions/rules | use native config | use native Codex plugins |

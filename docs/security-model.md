@@ -10,7 +10,7 @@ around review, merge preservation, and traceability.
 - package contents fetched into `.nexus/cache/`
 - previous lockfile: `nexus.personal.lock.yml` or `nexus.lock.yml`
 - existing target config files before merge:
-  - `~/.claude.json`
+  - `~/.claude/.mcp.json`
   - `~/.cursor/mcp.json`
   - `~/.gemini/antigravity/mcp_config.json`
   - `~/.codex/config.toml`

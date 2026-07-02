@@ -71,7 +71,7 @@ $ python nexus.py sync
 
 ==> Sync complete!
   6 skills processed; deployed counts: claude=6, cursor=6, antigravity=6, codex=6
-  MCP servers synced to: ~/.claude.json, ~/.cursor/mcp.json, ~/.gemini/antigravity/mcp_config.json, ~/.codex/config.toml
+  MCP servers synced to: ~/.claude/.mcp.json, ~/.cursor/mcp.json, ~/.gemini/antigravity/mcp_config.json, ~/.codex/config.toml
 ```
 
 ## 4. MCP Merge Behavior
@@ -153,7 +153,7 @@ $ python nexus.py doctor
   + cursor skills: 6 symlinks
   + antigravity skills: 6 symlinks
   + codex skills: 6 symlinks
-  + claude MCP config: 3 servers (~/.claude.json)
+  + claude MCP config: 3 servers (~/.claude/.mcp.json)
   + cursor MCP config: 3 servers (~/.cursor/mcp.json)
   + antigravity MCP config: 3 servers (~/.gemini/antigravity/mcp_config.json)
   + codex MCP config: 3 servers (~/.codex/config.toml)

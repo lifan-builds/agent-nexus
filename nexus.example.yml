@@ -10,7 +10,7 @@ version: 1.0.0
 
 # IDEs to deploy skills, hooks, and MCP configs to
 targets:
-  - claude         # ~/.claude/skills/, ~/.claude.json
+  - claude         # ~/.claude/skills/, ~/.claude/.mcp.json
   - cursor         # ~/.cursor/skills/, ~/.cursor/mcp.json
   - antigravity    # ~/.gemini/antigravity/skills/, ~/.gemini/antigravity/mcp_config.json
   - codex          # ~/.codex/skills/, ~/.codex/config.toml

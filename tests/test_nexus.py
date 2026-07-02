@@ -93,6 +93,38 @@ def test_mcp_sync_preserves_unmanaged_servers_and_local_env_secrets(tmp_path):
     assert servers["github"]["localSetting"] is True
 
 
+def test_claude_mcp_sync_uses_global_mcp_json_shape(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.targets = ["claude"]
+    cfg.data = {"packages": [], "mcps": [], "targets": cfg.targets}
+    mcp_path = tmp_path / ".claude" / ".mcp.json"
+
+    cfg.mcp_path = lambda _target: mcp_path
+    cfg.mcp_format = lambda _target: "mcp_servers_json"
+    mcp_path.parent.mkdir(parents=True)
+    mcp_path.write_text(json.dumps({
+        "mcpServers": {
+            "user-only": {"command": "custom"},
+        },
+    }))
+
+    deployer = nexus.Deployer(cfg)
+    deployer.sync_mcps([{
+        "name": "chrome-devtools",
+        "command": "npx",
+        "args": ["-y", "chrome-devtools-mcp@latest", "--autoConnect"],
+    }])
+
+    data = json.loads(mcp_path.read_text())
+    assert "projects" not in data
+    assert data["mcpServers"]["user-only"] == {"command": "custom"}
+    assert data["mcpServers"]["chrome-devtools"]["args"] == [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--autoConnect",
+    ]
+
+
 def test_codex_mcp_sync_preserves_placeholder_env_from_existing_managed_block(tmp_path):
     cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
     cfg.yml_path = tmp_path / "nexus.personal.yml"

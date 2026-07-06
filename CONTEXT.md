@@ -16,23 +16,17 @@ nexus.lock.yml    # Generated lockfile (resolved commits, hashes, deploy paths)
 .github/          # GitHub Actions + global skills symlink target
 ```
 
-## Rules
+## Operating Constraints
 
-### Never
-1. Never classify packages by type — auto-discover all assets (skills, hooks, commands, agents) from file patterns (SKILL.md, hooks.json, etc.)
-2. Never write to global IDE config files without showing a security review gate first
-3. Never add Python dependencies beyond PyYAML to `nexus.py`
-
-### Always
-1. Always deduplicate hooks by content hash before writing to any IDE config
-2. Always preserve existing MCP config keys during merge — don't overwrite local configs or secrets
-3. Always cache packages by commit SHA at `.nexus/cache/` (content-addressed, immutable snapshots)
-
-### Legacy Objectives
-<!-- Deprecated in schema v3. Preserve as project intent; use PLAN.md Done Criteria and Workflow Verification for active checks. -->
-1. `nexus sync` exits 0 and deploys all assets from `nexus.yml` to target IDEs (`go build ./...` exits 0 once Go rewrite lands)
-2. `nexus doctor` exits 0 with no health check failures
-3. No duplicate hook entries in any IDE `hooks.json` after sync
+- Do not classify packages by type — auto-discover all assets (skills, hooks, commands, agents) from file patterns (SKILL.md, hooks.json, etc.).
+- Do not write to global IDE config files without showing a security review gate first.
+- Do not add Python dependencies beyond PyYAML to `nexus.py`.
+- Deduplicate hooks by content hash before writing to any IDE config.
+- Preserve existing MCP config keys during merge — don't overwrite local configs or secrets.
+- Cache packages by commit SHA at `.nexus/cache/` (content-addressed, immutable snapshots).
+- `nexus sync` exits 0 and deploys all assets from `nexus.yml` to target IDEs (`go build ./...` exits 0 once Go rewrite lands).
+- `nexus doctor` exits 0 with no health check failures.
+- No duplicate hook entries in any IDE `hooks.json` after sync.
 
 ## Workflow
 - Setup: `pip install pyyaml && python nexus.py init && ln -sf $(pwd)/nexus.py ~/.local/bin/nexus`

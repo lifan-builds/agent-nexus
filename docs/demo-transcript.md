@@ -4,7 +4,39 @@ This transcript shows the release-readiness path a new developer should be able
 to follow. Exact package names and counts depend on the manifest, but the
 security review, lockfile, hook dedupe, and doctor steps are stable behavior.
 
-## 1. Initialize
+## 1. Audit Existing Config
+
+```bash
+$ python nexus.py audit --redact-home
+==> nexus audit
+
+Targets:
+  + claude: ~/.claude
+  + cursor: ~/.cursor
+  - antigravity: ~/.gemini/antigravity
+  + codex: ~/.codex
+
+MCP servers:
+  claude:
+    nexus-managed: context7
+    unmanaged: github
+  cursor:
+    nexus-managed: none
+    unmanaged: none
+
+Skills:
+  claude: 6 Nexus symlinks, 1 unmanaged dirs, 0 stale symlinks
+  cursor: 6 Nexus symlinks, 0 unmanaged dirs, 0 stale symlinks
+
+Hooks:
+  codex: 3 managed commands, 0 unmanaged commands
+```
+
+`nexus audit` is read-only: it detects target roots, MCP servers, skill links,
+stale symlinks, hooks, and lockfile state without fetching packages or writing
+config.
+
+## 2. Initialize
 
 ```bash
 $ python nexus.py init
@@ -15,7 +47,7 @@ Edit nexus.personal.yml for your machine, then run 'nexus sync --dry-run'.
 `nexus init` creates a personal manifest instead of asking users to edit the
 checked-in example.
 
-## 2. Dry Run And Security Review
+## 3. Dry Run And Security Review
 
 ```bash
 $ python nexus.py sync --dry-run
@@ -33,6 +65,10 @@ $ python nexus.py sync --dry-run
 ==> Would deploy:
   skill: context-harness -> claude,cursor,antigravity,codex
   skill: context-init -> claude,cursor,antigravity,codex
+    overlay: claude skill_frontmatter
+    overlay: cursor skill_frontmatter
+    overlay: antigravity skill_frontmatter
+    overlay: codex skill_frontmatter
   skill: context-catch-up -> claude,cursor,antigravity,codex
   skill: set-goal -> claude,cursor,antigravity,codex
   skill: context-maintain -> claude,cursor,antigravity,codex
@@ -41,9 +77,10 @@ $ python nexus.py sync --dry-run
 ```
 
 The dry run proves the review surface before writing target IDE config or
-lockfiles.
+lockfiles. When hooks are configured, the dry run also prints the hook commands
+that will be installed.
 
-## 3. Sync
+## 4. Sync
 
 ```bash
 $ python nexus.py sync
@@ -74,7 +111,7 @@ $ python nexus.py sync
   MCP servers synced to: ~/.claude/.mcp.json, ~/.cursor/mcp.json, ~/.gemini/antigravity/mcp_config.json, ~/.codex/config.toml
 ```
 
-## 4. MCP Merge Behavior
+## 5. MCP Merge Behavior
 
 Before sync:
 
@@ -109,7 +146,7 @@ mcps:
 After sync, `user-only`, `LOCAL_ONLY`, `localSetting`, and the real token remain,
 while the managed command and args are updated.
 
-## 5. Lockfile Output
+## 6. Lockfile Output
 
 ```yaml
 packages:
@@ -131,6 +168,23 @@ packages:
       - cursor
       - antigravity
       - codex
+    overlays:
+      - skill: context-init
+        target: claude
+        type: skill_frontmatter
+        path: .nexus/generated/claude/skills/context-init
+      - skill: context-init
+        target: cursor
+        type: skill_frontmatter
+        path: .nexus/generated/cursor/skills/context-init
+      - skill: context-init
+        target: antigravity
+        type: skill_frontmatter
+        path: .nexus/generated/antigravity/skills/context-init
+      - skill: context-init
+        target: codex
+        type: skill_frontmatter
+        path: .nexus/generated/codex/skills/context-init
 mcps:
   managed:
     - name: sequential-thinking
@@ -140,7 +194,7 @@ mcps:
 
 The path points to the immutable package snapshot used by deployed symlinks.
 
-## 6. Doctor
+## 7. Doctor
 
 ```bash
 $ python nexus.py doctor
@@ -160,7 +214,37 @@ $ python nexus.py doctor
   + Codex hooks: 3 entries (~/.codex/hooks.json)
 ```
 
-## 7. Context Harness Proof
+## 8. Dashboard
+
+```bash
+$ python nexus.py dashboard --json
+{
+  "meta": {
+    "nexus_version": "0.2.0",
+    "manifest_path": ".../nexus.personal.yml",
+    "lockfile_path": ".../nexus.personal.lock.yml",
+    "lockfile_exists": true
+  },
+  "summary": {
+    "targets": 4,
+    "packages": 1,
+    "skills": 6,
+    "managed_mcps": 3
+  }
+}
+```
+
+For interactive management:
+
+```bash
+$ python nexus.py dashboard --no-open
+==> Agent Nexus dashboard running at http://127.0.0.1:8765/
+  Press Ctrl-C to stop.
+```
+
+The dashboard shows inventory, global target policy, platform status, and per-skill/per-MCP token footprint in one place. It can update the global target list and trigger `nexus sync` only after an explicit confirmation.
+
+## 9. Context Harness Proof
 
 Context Harness is a normal Nexus package. When present in the manifest, it is
 fetched, discovered by `SKILL.md`, deployed as skill symlinks, and its Codex hook

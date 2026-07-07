@@ -6,14 +6,22 @@ Single-file, single-dependency (PyYAML) replacement for nexus.sh.
 """
 
 import argparse
-import hashlib
+import contextlib
+import html
+import io
 import json
+import hashlib
+import math
 import os
 import shutil
 import subprocess
 import sys
+import tempfile
+import webbrowser
 from datetime import datetime, timezone
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from types import SimpleNamespace
 
 NEXUS_VERSION = "0.2.0"
 
@@ -427,13 +435,24 @@ def skill_override(pkg: dict, skill_name: str) -> dict:
     return override if isinstance(override, dict) else {}
 
 
-def overlay_targets(pkg: dict, skill_name: str, default_targets: list[str]) -> list[str]:
+MATERIALIZED_OVERLAY_TYPES = ("agents_openai", "skill_frontmatter")
+
+
+def overlay_types(pkg: dict, skill_name: str) -> list[str]:
     override = skill_override(pkg, skill_name)
-    if not isinstance(override.get("agents_openai"), dict):
+    return [
+        overlay_type
+        for overlay_type in MATERIALIZED_OVERLAY_TYPES
+        if isinstance(override.get(overlay_type), dict)
+    ]
+
+
+def overlay_targets(pkg: dict, skill_name: str, default_targets: list[str]) -> list[str]:
+    if not overlay_types(pkg, skill_name):
         return []
 
     pkg_targets = package_targets(pkg, default_targets)
-    requested = override.get("targets")
+    requested = skill_override(pkg, skill_name).get("targets")
     if requested is None:
         return list(pkg_targets)
 
@@ -443,8 +462,9 @@ def overlay_targets(pkg: dict, skill_name: str, default_targets: list[str]) -> l
 
 def skill_overlays(pkg: dict, skill_name: str, default_targets: list[str]) -> list[dict]:
     return [
-        {"skill": skill_name, "target": target, "type": "agents_openai"}
+        {"skill": skill_name, "target": target, "type": overlay_type}
         for target in overlay_targets(pkg, skill_name, default_targets)
+        for overlay_type in overlay_types(pkg, skill_name)
     ]
 
 
@@ -519,6 +539,10 @@ class Deployer:
         generated.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(source_path, generated, symlinks=True)
 
+        skill_frontmatter = override.get("skill_frontmatter") or {}
+        if skill_frontmatter:
+            self._apply_skill_frontmatter(generated / "SKILL.md", skill_frontmatter)
+
         agents_openai = override.get("agents_openai") or {}
         if agents_openai:
             metadata_path = generated / "agents" / "openai.yaml"
@@ -527,6 +551,24 @@ class Deployer:
             merged = deep_merge(existing, agents_openai)
             self._write_yaml(metadata_path, merged)
         return generated
+
+    @staticmethod
+    def _apply_skill_frontmatter(path: Path, frontmatter: dict):
+        import yaml
+
+        text = path.read_text(encoding="utf-8") if path.exists() else ""
+        existing = {}
+        body = text
+        if text.startswith("---\n"):
+            parts = text.split("---\n", 2)
+            if len(parts) == 3:
+                data = yaml.safe_load(parts[1]) or {}
+                existing = data if isinstance(data, dict) else {}
+                body = parts[2]
+
+        merged = deep_merge(existing, frontmatter)
+        dumped = yaml.safe_dump(merged, default_flow_style=False, sort_keys=False).rstrip()
+        path.write_text(f"---\n{dumped}\n---\n{body}", encoding="utf-8")
 
     @staticmethod
     def _load_yaml_mapping(path: Path) -> dict:
@@ -1109,25 +1151,58 @@ class Deployer:
 # ---------------------------------------------------------------------------
 # Lockfile
 # ---------------------------------------------------------------------------
+def _resolved_commit_from_cache_path(path: str | None) -> str | None:
+    if not path:
+        return None
+    name = Path(path).name
+    if "-sparse-" in name:
+        return name.split("-sparse-", 1)[0]
+    return name if len(name) == 40 and all(ch in "0123456789abcdef" for ch in name.lower()) else None
+
+
+def _floating_ref_warning(ref: str | None) -> str | None:
+    if ref in {"main", "master", "HEAD"}:
+        return f"floating ref '{ref}' can change between syncs; prefer a tag or commit SHA for reproducible installs"
+    return None
+
+
+def _hook_deployments(pkg: dict, targets: list[str]) -> list[str]:
+    selected = set(package_targets(pkg, targets))
+    result = []
+    for target, key in [
+        ("claude", "hooks_claude"),
+        ("cursor", "hooks_cursor"),
+        ("codex", "hooks_codex"),
+    ]:
+        if target in selected and pkg.get(key):
+            result.append(target)
+    return result
+
+
 def generate_lockfile(
     discoveries: list[dict],
     manifest: dict,
     targets: list[str],
     repo_dir: Path | None = None,
     managed_mcps: list[dict] | None = None,
+    manifest_path: Path | None = None,
 ) -> dict:
     repo_dir = repo_dir or Path.cwd()
     lock = {
         "lockfile_version": 1,
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "nexus_version": NEXUS_VERSION,
+        "manifest_path": str(manifest_path) if manifest_path else None,
         "packages": [],
         "mcps": {"managed": []},
     }
     for pkg in discoveries:
+        source = pkg.get("source", {}) if isinstance(pkg.get("source"), dict) else {}
         entry = {
             "name": pkg["name"],
             "path": pkg["path"],
+            "cache_path": pkg["path"],
+            "source": source,
             "discovered": {
                 "skills": [s["name"] for s in pkg.get("skills", [])],
                 "hooks_claude": pkg.get("hooks_claude") is not None,
@@ -1137,7 +1212,11 @@ def generate_lockfile(
                 "agents": pkg.get("agents", []),
             },
             "deployed_to": package_targets(pkg, targets),
+            "hook_deployments": _hook_deployments(pkg, targets),
         }
+        warning = _floating_ref_warning(source.get("requested_ref"))
+        if warning:
+            entry["warnings"] = [warning]
         overlays = []
         for skill in pkg.get("skills", []):
             for overlay in skill_overlays(pkg, skill["name"], targets):
@@ -1235,9 +1314,1254 @@ def collect_mcps(cfg: Config, accepted_optional: list[str]) -> list[dict]:
     return result
 
 
+# ---------------------------------------------------------------------------
+# Dashboard model, local UI, and management actions
+# ---------------------------------------------------------------------------
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _path_value(path: Path | None) -> str | None:
+    return str(path) if path else None
+
+
+def estimate_tokens(text: str) -> int:
+    if not text:
+        return 0
+    return max(1, math.ceil(len(text) / 4))
+
+
+def sanitize_mcp(mcp: dict) -> dict:
+    clean = {}
+    for key, value in mcp.items():
+        if key == "env" and isinstance(value, dict):
+            clean["env_keys"] = sorted(str(k) for k in value.keys())
+        elif key == "headers" and isinstance(value, dict):
+            clean["header_keys"] = sorted(str(k) for k in value.keys())
+        elif key not in {"env", "headers"}:
+            clean[key] = value
+    return clean
+
+
+def sanitize_manifest(data: dict) -> dict:
+    sanitized = dict(data) if isinstance(data, dict) else {}
+    sanitized["mcps"] = [sanitize_mcp(mcp) for mcp in sanitized.get("mcps", []) if isinstance(mcp, dict)]
+    sanitized["optional_mcps"] = [
+        sanitize_mcp(mcp) for mcp in sanitized.get("optional_mcps", []) if isinstance(mcp, dict)
+    ]
+    return sanitized
+
+
+DASHBOARD_REDACTED_VALUE = "REDACTED_BY_NEXUS_DASHBOARD"
+
+
+def load_manifest_text(cfg: Config) -> str:
+    return cfg.yml_path.read_text(encoding="utf-8")
+
+
+def redact_manifest_for_dashboard(data: dict) -> dict:
+    def scrub(value):
+        if isinstance(value, dict):
+            return {
+                key: ({secret_key: DASHBOARD_REDACTED_VALUE for secret_key in val.keys()}
+                      if key in {"env", "headers"} and isinstance(val, dict)
+                      else scrub(val))
+                for key, val in value.items()
+            }
+        if isinstance(value, list):
+            return [scrub(item) for item in value]
+        return value
+    return scrub(data)
+
+
+def redact_manifest_text_for_dashboard(text: str) -> str:
+    redacted = []
+    secret_indent = None
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        indent = len(line) - len(stripped)
+        if secret_indent is not None and stripped and not stripped.startswith("#") and indent <= secret_indent:
+            secret_indent = None
+        if stripped.startswith(("env:", "headers:")):
+            secret_indent = indent
+            redacted.append(line)
+            continue
+        if secret_indent is not None and stripped and not stripped.startswith("#") and ":" in stripped:
+            key = stripped.split(":", 1)[0]
+            redacted.append(f"{' ' * indent}{key}: {DASHBOARD_REDACTED_VALUE}")
+            continue
+        redacted.append(line)
+    return "\n".join(redacted) + ("\n" if text.endswith("\n") else "")
+
+
+def load_redacted_manifest_text(cfg: Config) -> str:
+    if cfg.yml_path.exists():
+        return redact_manifest_text_for_dashboard(load_manifest_text(cfg))
+    try:
+        import yaml
+    except ImportError:
+        raise ValueError("PyYAML is required to render the manifest")
+    return yaml.dump(redact_manifest_for_dashboard(cfg.data), default_flow_style=False, sort_keys=False)
+
+
+def parse_manifest_text(text: str) -> dict:
+    try:
+        import yaml
+    except ImportError:
+        raise ValueError("PyYAML is required to parse the manifest")
+    try:
+        data = yaml.safe_load(text) or {}
+    except Exception as exc:
+        raise ValueError(str(exc)) from exc
+    if not isinstance(data, dict):
+        raise ValueError("Manifest must be a YAML mapping")
+    return data
+
+
+def validate_dashboard_manifest(data: dict) -> list[dict]:
+    errors = []
+    if not isinstance(data, dict):
+        return [{"field": "manifest", "message": "Manifest must be a YAML mapping"}]
+    for key in ["packages", "mcps", "optional_mcps", "targets"]:
+        if key in data and not isinstance(data[key], list):
+            errors.append({"field": key, "message": f"{key} must be a list"})
+    for section in ["mcps", "optional_mcps"]:
+        for index, mcp in enumerate(data.get(section, []) or []):
+            if not isinstance(mcp, dict):
+                errors.append({"field": f"{section}[{index}]", "message": "MCP entry must be a mapping"})
+                continue
+            if not mcp.get("name"):
+                errors.append({"field": f"{section}[{index}].name", "message": "MCP name is required"})
+            if "url" not in mcp and not mcp.get("command"):
+                errors.append({"field": f"{section}[{index}].command", "message": "MCP command or url is required"})
+    for index, pkg in enumerate(data.get("packages", []) or []):
+        if not isinstance(pkg, dict):
+            errors.append({"field": f"packages[{index}]", "message": "Package entry must be a mapping"})
+            continue
+        if not pkg.get("repo") and not pkg.get("path"):
+            errors.append({"field": f"packages[{index}]", "message": "Package repo or path is required"})
+    for index, target in enumerate(data.get("targets", []) or []):
+        if not isinstance(target, str) or not target.strip():
+            errors.append({"field": f"targets[{index}]", "message": "Target must be a non-empty string"})
+    return errors
+
+
+def _restore_redacted_values(proposed, original):
+    if proposed == DASHBOARD_REDACTED_VALUE:
+        return original
+    if isinstance(proposed, dict):
+        source = original if isinstance(original, dict) else {}
+        return {key: _restore_redacted_values(value, source.get(key)) for key, value in proposed.items()}
+    if isinstance(proposed, list):
+        source = original if isinstance(original, list) else []
+        return [
+            _restore_redacted_values(value, source[index] if index < len(source) else None)
+            for index, value in enumerate(proposed)
+        ]
+    return proposed
+
+
+def write_manifest_atomically(cfg: Config, text: str):
+    data = parse_manifest_text(text)
+    errors = validate_dashboard_manifest(data)
+    if errors:
+        raise ValueError(errors[0]["message"])
+    cfg.yml_path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=f".{cfg.yml_path.name}.", suffix=".tmp", dir=cfg.yml_path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+            if text and not text.endswith("\n"):
+                f.write("\n")
+        os.replace(tmp_name, cfg.yml_path)
+    finally:
+        if os.path.exists(tmp_name):
+            os.unlink(tmp_name)
+
+
+def update_manifest_from_dashboard(cfg: Config, payload: dict) -> dict:
+    if "text" in payload:
+        text = str(payload.get("text", ""))
+        if DASHBOARD_REDACTED_VALUE in text:
+            try:
+                import yaml
+            except ImportError:
+                raise ValueError("PyYAML is required to write the manifest")
+            original = parse_manifest_text(load_manifest_text(cfg)) if cfg.yml_path.exists() else {}
+            restored = _restore_redacted_values(parse_manifest_text(text), original)
+            text = yaml.dump(restored, default_flow_style=False, sort_keys=False)
+    elif isinstance(payload.get("manifest"), dict):
+        try:
+            import yaml
+        except ImportError:
+            raise ValueError("PyYAML is required to write the manifest")
+        original = cfg.data if DASHBOARD_REDACTED_VALUE in json.dumps(payload["manifest"]) else {}
+        manifest = _restore_redacted_values(payload["manifest"], original)
+        text = yaml.dump(manifest, default_flow_style=False, sort_keys=False)
+    else:
+        raise ValueError("Expected manifest text or structured manifest data")
+    write_manifest_atomically(cfg, text)
+    return {"ok": True, "path": str(cfg.yml_path)}
+
+
+def replace_manifest_targets_text(text: str, targets: list[str]) -> str:
+    lines = text.splitlines()
+    output = []
+    i = 0
+    replaced = False
+    while i < len(lines):
+        line = lines[i]
+        if line == "targets:":
+            replaced = True
+            output.append(line)
+            i += 1
+            suffixes = {}
+            while i < len(lines):
+                current = lines[i]
+                stripped = current.strip()
+                if current and not current.startswith((" ", "\t")):
+                    break
+                if stripped.startswith("- "):
+                    value = stripped[2:]
+                    name = value.split("#", 1)[0].strip()
+                    suffix = ""
+                    if "#" in value:
+                        suffix = "  #" + value.split("#", 1)[1]
+                    suffixes[name] = suffix
+                i += 1
+            for target in targets:
+                output.append(f"  - {target}{suffixes.get(target, '')}")
+            continue
+        output.append(line)
+        i += 1
+    if not replaced:
+        target_block = ["targets:", *[f"  - {target}" for target in targets], ""]
+        output = target_block + output
+    return "\n".join(output) + ("\n" if text.endswith("\n") else "")
+
+
+def update_manifest_targets(cfg: Config, targets: list[str]) -> dict:
+    if not isinstance(targets, list) or not targets:
+        raise ValueError("Select at least one target")
+    clean_targets = []
+    for target in targets:
+        if not isinstance(target, str) or not target.strip():
+            raise ValueError("Targets must be non-empty strings")
+        clean_targets.append(target.strip())
+    text = load_manifest_text(cfg) if cfg.yml_path.exists() else ""
+    write_manifest_atomically(cfg, replace_manifest_targets_text(text, clean_targets))
+    return {"ok": True, "targets": clean_targets, "path": str(cfg.yml_path)}
+
+
+def find_skill_markdown(pkg_path: Path, skill_name: str) -> Path | None:
+    if not pkg_path.is_dir():
+        return None
+    try:
+        candidates = list(pkg_path.rglob("SKILL.md"))
+    except OSError:
+        return None
+    for candidate in candidates:
+        if skill_name_from_file(candidate, candidate.parent.name) == skill_name:
+            return candidate
+    for candidate in candidates:
+        if candidate.parent.name == skill_name:
+            return candidate
+    return None
+
+
+def inspect_skill_links(cfg: Config, target: str) -> dict:
+    skill_dir = cfg.skill_path(target)
+    result = {
+        "path": _path_value(skill_dir),
+        "exists": bool(skill_dir and skill_dir.exists()),
+        "symlinks": 0,
+        "broken": 0,
+        "status": "missing",
+    }
+    if not skill_dir or not skill_dir.exists():
+        return result
+    links = [p for p in skill_dir.iterdir() if p.is_symlink()]
+    broken = [p for p in links if not p.resolve(strict=False).exists()]
+    result.update({
+        "symlinks": len(links),
+        "broken": len(broken),
+        "status": "warning" if broken else "healthy",
+    })
+    return result
+
+
+def _read_mcp_servers(cfg: Config, target: str, mcp_path: Path) -> tuple[dict, str | None]:
+    try:
+        if cfg.mcp_format(target) == "codex_toml":
+            import tomllib
+            with open(mcp_path, "rb") as f:
+                data = tomllib.load(f)
+            return data.get("mcp_servers", {}) or {}, None
+        with open(mcp_path, encoding="utf-8") as f:
+            data = json.load(f)
+        return data.get("mcpServers", {}) or {}, None
+    except Exception as exc:
+        return {}, str(exc)
+
+
+def inspect_mcp_config(cfg: Config, target: str, managed_names: set[str]) -> dict:
+    mcp_path = cfg.mcp_path(target)
+    result = {
+        "path": _path_value(mcp_path),
+        "exists": bool(mcp_path and mcp_path.exists()),
+        "format": cfg.mcp_format(target),
+        "server_count": 0,
+        "managed_present": [],
+        "managed_missing": sorted(managed_names),
+        "status": "missing",
+        "error": None,
+    }
+    if not mcp_path or not mcp_path.exists():
+        return result
+    servers, error = _read_mcp_servers(cfg, target, mcp_path)
+    if error:
+        result.update({"status": "invalid", "error": error})
+        return result
+    names = set(servers.keys())
+    present = sorted(names & managed_names)
+    missing = sorted(managed_names - names)
+    result.update({
+        "server_count": len(servers),
+        "managed_present": present,
+        "managed_missing": missing,
+        "status": "warning" if missing else "healthy",
+    })
+    return result
+
+
+def inspect_hook_status(cfg: Config) -> dict:
+    status = {}
+    cursor_hooks = cfg.repo_dir / ".cursor" / "hooks.json"
+    status["cursor"] = _inspect_json_hooks(cursor_hooks)
+    if "codex" in cfg.targets:
+        status["codex"] = _inspect_json_hooks(cfg.codex_hooks_path())
+    return status
+
+
+def _inspect_json_hooks(path: Path) -> dict:
+    result = {"path": str(path), "exists": path.exists(), "count": 0, "status": "missing", "error": None}
+    if not path.exists():
+        return result
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        count = sum(len(v) for v in data.get("hooks", {}).values())
+        result.update({"count": count, "status": "warning" if count > 10 else "healthy"})
+    except Exception as exc:
+        result.update({"status": "invalid", "error": str(exc)})
+    return result
+
+
+def _safe_targets(cfg: Config) -> list[str]:
+    if cfg.yml_path.exists():
+        return cfg.targets
+    return list(TARGET_REGISTRY)
+
+
+def _redact_home_path(path: str | None, redact_home: bool) -> str | None:
+    if path is None:
+        return None
+    if not redact_home:
+        return path
+    home = str(Path.home())
+    if path == home:
+        return "~"
+    if path.startswith(home + os.sep):
+        return "~" + path[len(home):]
+    return path
+
+
+def _target_skill_path_for_audit(cfg: Config, target: str) -> Path | None:
+    if not cfg.yml_path.exists() and target in TARGET_REGISTRY:
+        return TARGET_REGISTRY[target]["skills"]
+    return cfg.skill_path(target)
+
+
+def _target_mcp_path_for_audit(cfg: Config, target: str) -> Path | None:
+    if not cfg.yml_path.exists() and target in TARGET_REGISTRY:
+        return TARGET_REGISTRY[target]["mcp"]
+    return cfg.mcp_path(target)
+
+
+def _target_root_path(cfg: Config, target: str) -> Path | None:
+    skill_dir = _target_skill_path_for_audit(cfg, target)
+    if skill_dir:
+        return skill_dir.parent
+    mcp_path = _target_mcp_path_for_audit(cfg, target)
+    if mcp_path:
+        return mcp_path.parent
+    return None
+
+
+def _lock_managed_mcp_names(lock: dict | None) -> set[str]:
+    if not lock:
+        return set()
+    managed = lock.get("mcps", {}).get("managed", []) if isinstance(lock.get("mcps"), dict) else []
+    return {mcp.get("name") for mcp in managed if isinstance(mcp, dict) and mcp.get("name")}
+
+
+def _mcp_transport(entry: dict) -> str:
+    if "serverUrl" in entry:
+        return "url"
+    if "url" in entry:
+        return entry.get("type", "sse")
+    return entry.get("type", "stdio")
+
+
+def _audit_mcp_entry(name: str, entry: dict, managed_names: set[str]) -> dict:
+    result = {
+        "name": name,
+        "managed": name in managed_names,
+        "transport": _mcp_transport(entry) if isinstance(entry, dict) else "unknown",
+        "env_keys": [],
+        "header_keys": [],
+    }
+    if not isinstance(entry, dict):
+        return result
+    if result["transport"] == "stdio" or "command" in entry:
+        result["command"] = entry.get("command")
+        result["args"] = entry.get("args", []) if isinstance(entry.get("args", []), list) else []
+    if "url" in entry:
+        result["url"] = entry.get("url")
+    if "serverUrl" in entry:
+        result["url"] = entry.get("serverUrl")
+    env = entry.get("env")
+    if isinstance(env, dict):
+        result["env_keys"] = sorted(str(key) for key in env)
+    headers = entry.get("headers", entry.get("http_headers"))
+    if isinstance(headers, dict):
+        result["header_keys"] = sorted(str(key) for key in headers)
+    return result
+
+
+def _audit_mcp_config(cfg: Config, target: str, lock_managed_names: set[str]) -> dict:
+    mcp_path = _target_mcp_path_for_audit(cfg, target)
+    result = {
+        "path": str(mcp_path) if mcp_path else None,
+        "exists": bool(cfg.yml_path.exists() and mcp_path and mcp_path.exists()),
+        "format": cfg.mcp_format(target),
+        "servers": [],
+        "managed": [],
+        "unmanaged": [],
+        "error": None,
+    }
+    if not cfg.yml_path.exists() or not mcp_path or not mcp_path.exists():
+        return result
+
+    managed_names = set(lock_managed_names)
+    if cfg.mcp_format(target) == "codex_toml":
+        try:
+            content = mcp_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            result["error"] = str(exc)
+            return result
+        managed_names |= {name for name, _lines in Deployer._parse_codex_managed_entries(content)}
+
+    servers, error = _read_mcp_servers(cfg, target, mcp_path)
+    if error:
+        result["error"] = error
+        return result
+    result["servers"] = [
+        _audit_mcp_entry(name, entry, managed_names)
+        for name, entry in sorted(servers.items())
+    ]
+    result["managed"] = [server["name"] for server in result["servers"] if server["managed"]]
+    result["unmanaged"] = [server["name"] for server in result["servers"] if not server["managed"]]
+    return result
+
+
+def _path_points_into(path: Path, parent: Path) -> bool:
+    try:
+        path.resolve(strict=False).relative_to(parent.resolve(strict=False))
+        return True
+    except ValueError:
+        return False
+
+
+def _is_nexus_skill_link(cfg: Config, link: Path) -> bool:
+    dest = link.resolve(strict=False)
+    return (
+        _path_points_into(dest, cfg.cache_dir)
+        or _path_points_into(dest, cfg.nexus_dir / "generated")
+    )
+
+
+def _symlink_is_stale(link: Path) -> bool:
+    try:
+        link.resolve(strict=True)
+        return False
+    except OSError:
+        return True
+
+
+def _audit_skills(cfg: Config, target: str) -> dict:
+    skill_dir = _target_skill_path_for_audit(cfg, target)
+    result = {
+        "path": str(skill_dir) if skill_dir else None,
+        "exists": bool(cfg.yml_path.exists() and skill_dir and skill_dir.exists()),
+        "nexus_symlinks": [],
+        "unmanaged_dirs": [],
+        "stale_symlinks": [],
+    }
+    if not cfg.yml_path.exists() or not skill_dir or not skill_dir.exists():
+        return result
+    for child in sorted(skill_dir.iterdir(), key=lambda p: p.name):
+        if child.is_symlink():
+            if _symlink_is_stale(child):
+                result["stale_symlinks"].append(child.name)
+            elif _is_nexus_skill_link(cfg, child):
+                result["nexus_symlinks"].append(child.name)
+        elif child.is_dir():
+            result["unmanaged_dirs"].append(child.name)
+    return result
+
+
+def _hook_path_for_target(cfg: Config, target: str) -> Path | None:
+    if target == "claude":
+        return cfg.repo_dir / ".github" / "hooks"
+    if target == "cursor":
+        return cfg.repo_dir / ".cursor" / "hooks.json"
+    if target == "codex":
+        return cfg.codex_hooks_path()
+    return None
+
+
+def _walk_hook_commands(value) -> list[str]:
+    commands = []
+    if isinstance(value, dict):
+        command = value.get("command")
+        if isinstance(command, str):
+            commands.append(command)
+        for item in value.values():
+            commands.extend(_walk_hook_commands(item))
+    elif isinstance(value, list):
+        for item in value:
+            commands.extend(_walk_hook_commands(item))
+    return commands
+
+
+def _audit_hooks(cfg: Config, target: str) -> dict:
+    hook_path = _hook_path_for_target(cfg, target)
+    result = {
+        "path": str(hook_path) if hook_path else None,
+        "exists": bool(hook_path and hook_path.exists()),
+        "managed": 0,
+        "unmanaged": 0,
+        "files": 0,
+        "error": None,
+    }
+    if not hook_path or not hook_path.exists():
+        return result
+    if hook_path.is_dir():
+        result["files"] = sum(1 for child in hook_path.iterdir() if child.is_file())
+        result["unmanaged"] = result["files"]
+        return result
+    try:
+        data = json.loads(hook_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        result["error"] = str(exc)
+        return result
+    commands = _walk_hook_commands(data.get("hooks", {}))
+    result["managed"] = sum(1 for command in commands if "--nexus-package" in command)
+    result["unmanaged"] = len(commands) - result["managed"]
+    return result
+
+
+def build_audit_model(cfg: Config, targets: list[str] | None = None, redact_home: bool = False) -> dict:
+    selected_targets = targets or _safe_targets(cfg)
+    lock = cfg.load_lockfile()
+    managed_names = _lock_managed_mcp_names(lock)
+    target_rows = []
+    for target in selected_targets:
+        root = _target_root_path(cfg, target)
+        target_rows.append({
+            "name": target,
+            "root": {
+                "path": _redact_home_path(str(root) if root else None, redact_home),
+                "exists": bool(root and root.exists()),
+            },
+            "skills": _audit_skills(cfg, target),
+            "mcp": _audit_mcp_config(cfg, target, managed_names),
+            "hooks": _audit_hooks(cfg, target),
+        })
+    for row in target_rows:
+        for section in ["skills", "mcp", "hooks"]:
+            if row[section].get("path"):
+                row[section]["path"] = _redact_home_path(row[section]["path"], redact_home)
+    return {
+        "meta": {
+            "nexus_version": NEXUS_VERSION,
+            "manifest_path": _redact_home_path(str(cfg.yml_path), redact_home),
+            "manifest_exists": cfg.yml_path.exists(),
+            "lockfile_path": _redact_home_path(str(cfg.lockfile_path), redact_home),
+            "lockfile_exists": cfg.lockfile_path.exists(),
+        },
+        "targets": target_rows,
+    }
+
+
+def _print_audit_text(model: dict):
+    info("nexus audit")
+    print(file=sys.stderr)
+    print("Targets:", file=sys.stderr)
+    for target in model["targets"]:
+        marker = "+" if target["root"]["exists"] else "-"
+        print(f"  {marker} {target['name']}: {target['root']['path'] or 'not configured'}", file=sys.stderr)
+
+    print(file=sys.stderr)
+    print("MCP servers:", file=sys.stderr)
+    for target in model["targets"]:
+        mcp = target["mcp"]
+        if mcp["error"]:
+            print(f"  {target['name']}: invalid ({mcp['error']})", file=sys.stderr)
+            continue
+        managed = ", ".join(mcp["managed"]) or "none"
+        unmanaged = ", ".join(mcp["unmanaged"]) or "none"
+        print(f"  {target['name']}:", file=sys.stderr)
+        print(f"    nexus-managed: {managed}", file=sys.stderr)
+        print(f"    unmanaged: {unmanaged}", file=sys.stderr)
+
+    print(file=sys.stderr)
+    print("Skills:", file=sys.stderr)
+    for target in model["targets"]:
+        skills = target["skills"]
+        if not skills["exists"]:
+            print(f"  {target['name']}: not found", file=sys.stderr)
+            continue
+        print(
+            f"  {target['name']}: {len(skills['nexus_symlinks'])} Nexus symlinks, "
+            f"{len(skills['unmanaged_dirs'])} unmanaged dirs, "
+            f"{len(skills['stale_symlinks'])} stale symlinks",
+            file=sys.stderr,
+        )
+
+    print(file=sys.stderr)
+    print("Hooks:", file=sys.stderr)
+    for target in model["targets"]:
+        hooks = target["hooks"]
+        if not hooks["path"]:
+            print(f"  {target['name']}: not supported", file=sys.stderr)
+        elif not hooks["exists"]:
+            print(f"  {target['name']}: not found ({hooks['path']})", file=sys.stderr)
+        elif hooks["error"]:
+            print(f"  {target['name']}: invalid ({hooks['error']})", file=sys.stderr)
+        elif hooks["files"]:
+            print(f"  {target['name']}: {hooks['files']} hook files ({hooks['path']})", file=sys.stderr)
+        else:
+            print(f"  {target['name']}: {hooks['managed']} managed commands, {hooks['unmanaged']} unmanaged commands", file=sys.stderr)
+
+
+def cmd_audit(cfg: Config, args):
+    targets = [args.target] if getattr(args, "target", None) else None
+    model = build_audit_model(cfg, targets, getattr(args, "redact_home", False))
+    if getattr(args, "json", False):
+        print(json.dumps(model, indent=2, sort_keys=False))
+        return
+    print()
+    _print_audit_text(model)
+    print()
+
+
+def _manifest_package_name(pkg: dict) -> str:
+    if pkg.get("name"):
+        return pkg["name"]
+    if pkg.get("repo"):
+        return str(pkg["repo"]).split("/", 1)[-1]
+    if pkg.get("path"):
+        return Path(str(pkg["path"])).name
+    return "unknown"
+
+
+def _skill_override(manifest_packages: list[dict], pkg_name: str, skill_name: str) -> dict:
+    for pkg in manifest_packages:
+        if _manifest_package_name(pkg) != pkg_name:
+            continue
+        overrides = pkg.get("skill_overrides", {}) if isinstance(pkg.get("skill_overrides"), dict) else {}
+        skill_override = overrides.get(skill_name, {}) if isinstance(overrides.get(skill_name, {}), dict) else {}
+        return skill_override if isinstance(skill_override, dict) else {}
+    return {}
+
+
+def _package_cost_metadata(manifest_packages: list[dict], pkg_name: str, skill_name: str) -> dict:
+    skill_override = _skill_override(manifest_packages, pkg_name, skill_name)
+    return skill_override.get("cost", {}) if isinstance(skill_override.get("cost"), dict) else {}
+
+
+def _skill_implicit_invocation_enabled(manifest_packages: list[dict], pkg_name: str, skill_name: str) -> bool:
+    skill_override = _skill_override(manifest_packages, pkg_name, skill_name)
+    frontmatter = skill_override.get("skill_frontmatter") if isinstance(skill_override, dict) else None
+    if isinstance(frontmatter, dict) and frontmatter.get("disable-model-invocation") is True:
+        return False
+    agents_openai = skill_override.get("agents_openai") if isinstance(skill_override, dict) else None
+    policy = agents_openai.get("policy") if isinstance(agents_openai, dict) else None
+    if isinstance(policy, dict) and policy.get("allow_implicit_invocation") is False:
+        return False
+    return True
+
+
+def _cost_estimate(cost: dict) -> dict:
+    tokens = cost.get("estimated_tokens_per_call", cost.get("estimated_tokens_per_invocation"))
+    price = cost.get("estimated_usd_per_1k_tokens")
+    estimated_usd = None
+    if isinstance(tokens, (int, float)) and isinstance(price, (int, float)):
+        estimated_usd = round((tokens / 1000) * price, 6)
+    return {
+        "metadata": cost,
+        "estimated_tokens": tokens if isinstance(tokens, (int, float)) else None,
+        "estimated_usd": estimated_usd,
+    }
+
+
+def build_dashboard_model(cfg: Config) -> dict:
+    data = cfg.data
+    lock = cfg.load_lockfile() or {}
+    lock_packages = lock.get("packages", []) if isinstance(lock.get("packages", []), list) else []
+    managed_mcps = lock.get("mcps", {}).get("managed", []) if isinstance(lock.get("mcps"), dict) else []
+    managed_names = {mcp.get("name") for mcp in managed_mcps if isinstance(mcp, dict) and mcp.get("name")}
+    hook_status = inspect_hook_status(cfg)
+    target_rows = []
+    warnings = []
+
+    for target in cfg.targets:
+        skill_status = inspect_skill_links(cfg, target)
+        mcp_status = inspect_mcp_config(cfg, target, managed_names)
+        target_hook = hook_status.get(target)
+        states = [skill_status["status"], mcp_status["status"]]
+        if target_hook:
+            states.append(target_hook["status"])
+        if "invalid" in states:
+            overall = "invalid"
+        elif "warning" in states:
+            overall = "warning"
+        elif all(state == "healthy" for state in states):
+            overall = "healthy"
+        else:
+            overall = "missing"
+        if skill_status["broken"]:
+            warnings.append(f"{target} has {skill_status['broken']} broken skill links")
+        if mcp_status["status"] == "invalid":
+            warnings.append(f"{target} MCP config is invalid")
+        target_rows.append({
+            "name": target,
+            "skill_path": skill_status["path"],
+            "mcp_path": mcp_status["path"],
+            "skills": skill_status,
+            "mcp": mcp_status,
+            "hooks": target_hook,
+            "status": overall,
+        })
+
+    packages = []
+    lock_by_name = {pkg.get("name"): pkg for pkg in lock_packages if isinstance(pkg, dict)}
+    for pkg in data.get("packages", []) or []:
+        if not isinstance(pkg, dict):
+            continue
+        name = _manifest_package_name(pkg)
+        packages.append({
+            "name": name,
+            "repo": pkg.get("repo"),
+            "path": pkg.get("path"),
+            "deploy_targets": pkg.get("targets", cfg.targets),
+            "uses_global_targets": "targets" not in pkg,
+            "skills": pkg.get("skills"),
+            "hooks": pkg.get("hooks"),
+            "sparse_paths": pkg.get("sparse_paths", []),
+            "discovered": lock_by_name.get(name, {}).get("discovered", {}),
+            "deployed_to": lock_by_name.get(name, {}).get("deployed_to", []),
+            "overlays": lock_by_name.get(name, {}).get("overlays", []),
+        })
+    for pkg in lock_packages:
+        if pkg.get("name") not in {p["name"] for p in packages}:
+            packages.append({
+                "name": pkg.get("name"),
+                "repo": None,
+                "path": pkg.get("path"),
+                "deploy_targets": pkg.get("deployed_to", []),
+                "uses_global_targets": False,
+                "skills": None,
+                "hooks": None,
+                "sparse_paths": [],
+                "discovered": pkg.get("discovered", {}),
+                "deployed_to": pkg.get("deployed_to", []),
+                "overlays": pkg.get("overlays", []),
+            })
+
+    skills = []
+    total_skill_tokens = 0
+    implicit_skill_tokens = 0
+    implicit_skill_count = 0
+    for pkg in lock_packages:
+        pkg_name = pkg.get("name", "unknown")
+        pkg_path = Path(pkg.get("path", ""))
+        overlays = pkg.get("overlays", []) if isinstance(pkg.get("overlays", []), list) else []
+        for skill_name in pkg.get("discovered", {}).get("skills", []) or []:
+            skill_file = find_skill_markdown(pkg_path, skill_name)
+            estimate_source = None
+            token_estimate = None
+            if skill_file:
+                try:
+                    token_estimate = estimate_tokens(skill_file.read_text(encoding="utf-8"))
+                    estimate_source = str(skill_file)
+                except OSError:
+                    token_estimate = None
+            if token_estimate is None:
+                token_estimate = 0
+                estimate_source = "unknown"
+            total_skill_tokens += token_estimate
+            implicit_enabled = _skill_implicit_invocation_enabled(
+                data.get("packages", []) or [], pkg_name, skill_name
+            )
+            if implicit_enabled:
+                implicit_skill_tokens += token_estimate
+                implicit_skill_count += 1
+            cost = _package_cost_metadata(data.get("packages", []) or [], pkg_name, skill_name)
+            skills.append({
+                "name": skill_name,
+                "package": pkg_name,
+                "deployed_to": pkg.get("deployed_to", []),
+                "overlays": [o for o in overlays if o.get("skill") == skill_name],
+                "implicit_invocation": implicit_enabled,
+                "token_consumption": {
+                    "static_tokens": token_estimate,
+                    "source": estimate_source,
+                },
+                "static_tokens": token_estimate,
+                "token_source": estimate_source,
+                "cost": _cost_estimate(cost),
+            })
+
+    declared_mcps = []
+    for mcp in data.get("mcps", []) or []:
+        if isinstance(mcp, dict):
+            declared_mcps.append((mcp, bool(mcp.get("optional"))))
+    for mcp in data.get("optional_mcps", []) or []:
+        if isinstance(mcp, dict):
+            declared_mcps.append((mcp, True))
+
+    mcps = []
+    total_mcp_tokens = 0
+    for mcp, optional in declared_mcps:
+        clean = sanitize_mcp(mcp)
+        footprint_text = json.dumps(clean, sort_keys=True)
+        static_tokens = estimate_tokens(footprint_text)
+        total_mcp_tokens += static_tokens
+        name = clean.get("name")
+        mcps.append({
+            **clean,
+            "optional": optional,
+            "included_in_lockfile": name in managed_names,
+            "token_consumption": {
+                "static_tokens": static_tokens,
+                "source": "sanitized MCP config",
+            },
+            "static_tokens": static_tokens,
+            "cost": _cost_estimate(mcp.get("cost", {}) if isinstance(mcp.get("cost"), dict) else {}),
+            "targets": {
+                target["name"]: name in set(target["mcp"].get("managed_present", []))
+                for target in target_rows
+            },
+        })
+
+    if not cfg.lockfile_path.exists():
+        warnings.append(f"{cfg.lockfile_path.name} missing; run sync to populate discovered assets")
+
+    return {
+        "meta": {
+            "nexus_version": NEXUS_VERSION,
+            "manifest_path": str(cfg.yml_path),
+            "lockfile_path": str(cfg.lockfile_path),
+            "manifest_exists": cfg.yml_path.exists(),
+            "lockfile_exists": cfg.lockfile_path.exists(),
+            "lockfile_generated_at": lock.get("generated_at"),
+            "generated_at": _now_iso(),
+        },
+        "summary": {
+            "targets": len(cfg.targets),
+            "packages": len(packages),
+            "skills": len(skills),
+            "implicit_skills": implicit_skill_count,
+            "managed_mcps": len(managed_names),
+            "declared_mcps": len(mcps),
+            "warnings": len(warnings),
+            "skill_static_tokens": implicit_skill_tokens,
+            "all_skill_static_tokens": total_skill_tokens,
+            "mcp_static_tokens": total_mcp_tokens,
+        },
+        "deployment": {
+            "global_targets": cfg.targets,
+            "available_targets": sorted(set(TARGET_REGISTRY.keys()) | set(cfg.targets)),
+            "default_to_all": True,
+        },
+        "manifest": sanitize_manifest(data),
+        "packages": packages,
+        "skills": skills,
+        "mcps": mcps,
+        "targets": target_rows,
+        "actions": {
+            "can_save_manifest": cfg.yml_path.exists(),
+            "can_dry_run": cfg.yml_path.exists(),
+            "can_deploy": cfg.yml_path.exists(),
+        },
+        "warnings": warnings,
+    }
+
+
+def _json_response(handler: BaseHTTPRequestHandler, status: int, payload: dict):
+    body = json.dumps(payload, indent=2, sort_keys=False).encode("utf-8")
+    handler.send_response(status)
+    handler.send_header("Content-Type", "application/json; charset=utf-8")
+    handler.send_header("Content-Length", str(len(body)))
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
+def _text_response(handler: BaseHTTPRequestHandler, status: int, text: str, content_type: str = "text/plain; charset=utf-8"):
+    body = text.encode("utf-8")
+    handler.send_response(status)
+    handler.send_header("Content-Type", content_type)
+    handler.send_header("Content-Length", str(len(body)))
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
+def _capture_sync(cfg: Config, args: SimpleNamespace) -> dict:
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+    original_confirm = globals()["confirm"]
+    globals()["confirm"] = lambda _prompt: False
+    try:
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            cmd_sync(cfg, args)
+        return {"ok": True, "stdout": stdout.getvalue(), "stderr": stderr.getvalue()}
+    except SystemExit as exc:
+        return {"ok": False, "stdout": stdout.getvalue(), "stderr": stderr.getvalue(), "exit_code": exc.code}
+    except Exception as exc:
+        return {"ok": False, "stdout": stdout.getvalue(), "stderr": stderr.getvalue(), "error": str(exc)}
+    finally:
+        globals()["confirm"] = original_confirm
+
+
+def run_dashboard_sync_action(cfg: Config, action: str, payload: dict | None = None) -> dict:
+    payload = payload or {}
+    if action == "deploy":
+        if payload.get("confirm") != "deploy":
+            return {"ok": False, "error": "Type deploy to confirm."}
+        return _capture_sync(cfg, SimpleNamespace(all=False, dry_run=False, yes=True))
+    return {"ok": False, "error": "Unknown dashboard action"}
+
+
+def _read_json_body(handler: BaseHTTPRequestHandler) -> dict:
+    length = int(handler.headers.get("Content-Length", "0") or "0")
+    if length <= 0:
+        return {}
+    body = handler.rfile.read(length).decode("utf-8")
+    return json.loads(body or "{}")
+
+
+def render_dashboard_html() -> str:
+    return r'''<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Nexus Dashboard</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #071018;
+  --panel: #0d1824;
+  --panel-2: #111f2d;
+  --ink: #eef7ff;
+  --muted: #95a9bb;
+  --line: #203246;
+  --accent: #31d0aa;
+  --accent-2: #65a7ff;
+  --good: #68e39b;
+  --warn: #ffd166;
+  --bad: #ff7a6f;
+  --code: #e8f2ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(49, 208, 170, .24), transparent 28rem),
+    radial-gradient(circle at 82% 12%, rgba(101, 167, 255, .20), transparent 26rem),
+    linear-gradient(180deg, #071018 0%, #09131d 55%, #071018 100%);
+  color: var(--ink);
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.75), transparent 72%);
+}
+button, textarea, pre { font: inherit; }
+.shell { width: min(1480px, calc(100vw - 32px)); margin: 0 auto; }
+header { padding: 32px 0 10px; position: relative; }
+.topline { display:flex; align-items:center; justify-content:space-between; gap: 16px; flex-wrap: wrap; }
+h1 { margin: 0; font-size: 38px; line-height: 1.05; letter-spacing: -0.035em; text-wrap: balance; }
+.kicker { color: var(--accent); font-size: 13px; font-weight: 800; margin-bottom: 8px; }
+.subtle { color: var(--muted); }
+.pathline { margin-top: 12px; color: var(--muted); font-size: 13px; word-break: break-all; }
+.toolbar { display:flex; flex-wrap:wrap; gap:10px; }
+button {
+  border: 1px solid var(--line);
+  background: #101d2a;
+  color: var(--ink);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 760;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+button:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent), var(--line) 45%); }
+button:active { transform: translateY(1px); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #03100d; }
+button.danger { border-color: color-mix(in srgb, var(--bad), var(--line) 35%); color: #ffd9d5; background: rgba(255, 122, 111, .09); }
+button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 3px solid rgba(49, 208, 170, .38); outline-offset: 2px; }
+main { padding: 18px 0 48px; position: relative; }
+.grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(172px, 1fr)); gap: 10px; margin: 22px 0; }
+.card, section, .tabs {
+  background: color-mix(in srgb, var(--panel), transparent 6%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.card { padding: 16px; position: relative; overflow: hidden; }
+.card::after { content:""; position:absolute; inset:auto 12px 0; height:2px; background: linear-gradient(90deg, var(--accent), transparent); opacity:.65; }
+.card .value { font-size: 30px; font-weight: 850; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.card .label { color: var(--muted); font-size: 12px; margin-top: 5px; }
+.tabs { display:flex; gap: 6px; flex-wrap:wrap; margin: 20px 0 12px; padding: 6px; position: sticky; top: 8px; z-index: 2; }
+.tab { border-radius: 10px; padding: 9px 12px; background: transparent; }
+.tab.active { background: var(--accent); border-color: var(--accent); color: #03100d; }
+section { display:none; padding: 18px; margin-top: 12px; }
+section.active { display:block; }
+.section-head { display:flex; align-items:flex-end; justify-content:space-between; gap: 16px; margin-bottom: 16px; }
+h2 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+h3 { margin: 22px 0 10px; font-size: 15px; }
+.table-wrap { overflow:auto; border: 1px solid var(--line); border-radius: 14px; background: rgba(5, 13, 20, .36); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 760px; }
+th, td { text-align:left; padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,.07); vertical-align: top; }
+th { color: #b7c7d5; font-size: 11px; letter-spacing: .05em; font-weight: 850; }
+tr:last-child td { border-bottom: 0; }
+.name-cell { font-weight: 800; color: #f7fbff; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.pill { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:5px 9px; border:1px solid var(--line); font-size:12px; font-weight:800; white-space: nowrap; }
+.healthy { color: var(--good); } .warning { color: var(--warn); } .invalid, .missing { color: var(--bad); }
+.token-bar { width: 110px; height: 7px; background: #152334; border-radius: 999px; overflow:hidden; display:inline-block; vertical-align:middle; margin-left: 8px; }
+.token-bar > span { display:block; height:100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius:inherit; }
+.target-grid { display:flex; flex-wrap:wrap; gap: 8px; margin: 12px 0; }
+.target-chip { display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line); border-radius:999px; background:#0a1521; color:var(--ink); font-weight:750; }
+.target-chip input { accent-color: var(--accent); }
+textarea { width:100%; min-height: 420px; resize: vertical; border:1px solid var(--line); border-radius:14px; padding:14px; background: #06111b; color: var(--code); font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+pre { overflow:auto; white-space:pre-wrap; background:#06111b; padding:14px; border-radius:14px; border:1px solid var(--line); color: var(--code); }
+.notice { padding: 12px 14px; background: rgba(49, 208, 170, .10); border:1px solid rgba(49, 208, 170, .26); border-radius: 14px; margin-bottom: 14px; color:#dffbf5; }
+.row-actions { display:flex; flex-wrap:wrap; gap:10px; margin: 12px 0; }
+.small { font-size: 12px; }
+.split { display:grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px; }
+.side-panel { border:1px solid var(--line); border-radius:14px; padding:14px; background:#081522; }
+@media (max-width: 900px) { .split { grid-template-columns: 1fr; } table { min-width: 680px; } h1 { font-size: 31px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="shell">
+  <div class="topline">
+    <div>
+      <div class="kicker">Local agent control plane</div>
+      <h1>Agent Nexus Dashboard</h1>
+      <div class="pathline" id="paths">Loading local Nexus state...</div>
+    </div>
+    <div class="toolbar">
+      <button class="primary" id="refreshBtn">Refresh</button>
+      <button class="danger" id="deployBtn">Deploy</button>
+    </div>
+  </div>
+</header>
+<main class="shell">
+  <div class="grid" id="summary"></div>
+  <div class="tabs">
+    <button class="tab active" data-tab="inventory">Inventory</button>
+    <button class="tab" data-tab="manage">Target policy</button>
+    <button class="tab" data-tab="status">Platforms</button>
+  </div>
+  <section id="inventory" class="active"></section>
+  <section id="manage"></section>
+  <section id="status"></section>
+</main>
+<script>
+let state = null;
+const esc = value => String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pill = status => `<span class="pill ${esc(status)}">${esc(status || 'unknown')}</span>`;
+const maxSkillTokens = () => Math.max(1, ...((state?.skills || []).map(s => s.static_tokens || 0)));
+const maxMcpTokens = () => Math.max(1, ...((state?.mcps || []).map(m => m.static_tokens || 0)));
+const tokenMeter = (value, max) => `<span class="mono">${esc(value)}</span><span class="token-bar" aria-hidden="true"><span style="width:${Math.max(4, Math.round((Number(value || 0) / max) * 100))}%"></span></span>`;
+async function api(path, options={}) {
+  const res = await fetch(path, {headers:{'Content-Type':'application/json'}, ...options});
+  const text = await res.text();
+  let data; try { data = JSON.parse(text); } catch { data = {ok:false, error:text}; }
+  if (!res.ok) throw new Error(data.error || data.message || res.statusText);
+  return data;
+}
+async function refresh() {
+  state = await api('/api/state');
+  document.getElementById('paths').textContent = `Manifest: ${state.meta.manifest_path} | Lockfile: ${state.meta.lockfile_path}`;
+  renderSummary(); renderInventory(); renderManage(); renderStatus();
+}
+function renderSummary() {
+  const rows = [
+    ['Global targets', state.summary.targets], ['Packages', state.summary.packages], ['Skills', state.summary.skills],
+    ['Implicit skills', state.summary.implicit_skills], ['Warnings', state.summary.warnings],
+    ['Implicit skill tokens', state.summary.skill_static_tokens], ['MCP tokens', state.summary.mcp_static_tokens]
+  ];
+  document.getElementById('summary').innerHTML = rows.map(([label, value]) => `<div class="card"><div class="value">${esc(value)}</div><div class="label">${esc(label)}</div></div>`).join('');
+}
+function table(headers, rows) {
+  return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('') || `<tr><td colspan="${headers.length}" class="subtle">No rows.</td></tr>`}</tbody></table></div>`;
+}
+function renderInventory() {
+  const packages = state.packages.map(p => `<tr><td class="name-cell">${esc(p.name)}</td><td>${esc(p.repo || p.path || '')}</td><td>${esc(p.uses_global_targets ? 'Global targets' : (p.deploy_targets || []).join(', '))}</td><td>${esc(((p.discovered||{}).skills||[]).length)} skills</td></tr>`);
+  const skills = state.skills.map(s => `<tr><td class="name-cell">${esc(s.name)}</td><td>${esc(s.package)}</td><td>${esc(s.implicit_invocation ? 'Implicit' : 'Manual only')}</td><td>${tokenMeter(s.static_tokens, maxSkillTokens())}</td></tr>`);
+  const mcps = state.mcps.map(m => `<tr><td class="name-cell">${esc(m.name)}</td><td>${esc(m.optional ? 'Optional' : 'Required')}</td><td>${esc(m.transport || (m.url ? 'http/sse' : 'stdio'))}</td><td>${esc(m.command || m.url || '')}</td><td>${tokenMeter(m.static_tokens, maxMcpTokens())}</td></tr>`);
+  document.getElementById('inventory').innerHTML = `<div class="section-head"><h2>Inventory management</h2><span class="subtle small">Configured assets with token usage in one place</span></div>${warningsHtml()}<h3>Packages</h3>${table(['Name','Source','Target policy','Discovered'], packages)}<h3>Skills</h3>${table(['Skill','Package','Invocation','Tokens'], skills)}<h3>MCP servers</h3>${table(['Name','Kind','Transport','Command or URL','Tokens'], mcps)}`;
+}
+function warningsHtml() {
+  return (state.warnings || []).length ? `<div class="notice"><strong>Warnings</strong><ul>${state.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div>` : '';
+}
+function renderManage() {
+  const selected = new Set(state.deployment.global_targets || []);
+  const chips = (state.deployment.available_targets || []).map(target => `<label class="target-chip"><input type="checkbox" data-target="${esc(target)}" ${selected.has(target) ? 'checked' : ''}>${esc(target)}</label>`).join('');
+  document.getElementById('manage').innerHTML = `<div class="section-head"><h2>Target policy</h2><span class="subtle small">Default: all platforms selected</span></div><div class="split"><div><div class="notice">Choose the global deployment targets. Packages deploy to these platforms unless a package explicitly overrides targets.</div><div class="target-grid" id="targetGrid">${chips}</div><div class="row-actions"><button class="primary" id="saveTargetsBtn">Save target policy</button></div><pre id="targetResult">All configured platforms are selected by default.</pre></div><aside class="side-panel"><h3>Current policy</h3><p class="subtle">${esc((state.deployment.global_targets || []).join(', '))}</p><p class="subtle">This updates the manifest targets list without showing the raw manifest in the dashboard.</p></aside></div>`;
+  document.getElementById('saveTargetsBtn').onclick = saveTargets;
+}
+async function saveTargets() {
+  const targets = [...document.querySelectorAll('#targetGrid input:checked')].map(input => input.dataset.target);
+  const result = await api('/api/targets/save', {method:'POST', body: JSON.stringify({targets})}).catch(e => ({ok:false, error:e.message}));
+  document.getElementById('targetResult').textContent = JSON.stringify(result, null, 2);
+  if (result.ok) await refresh();
+}
+function renderStatus() {
+  const rows = state.targets.map(t => `<tr><td class="name-cell">${esc(t.name)}</td><td>${pill(t.status)}</td><td>${esc(t.skill_path || '')}</td><td>${esc(t.skills.symlinks)} links / ${esc(t.skills.broken)} broken</td><td>${pill(t.mcp.status)} ${esc(t.mcp.server_count)} servers</td><td>${esc(t.hooks ? `${t.hooks.count} entries (${t.hooks.status})` : 'n/a')}</td></tr>`);
+  document.getElementById('status').innerHTML = `<div class="section-head"><h2>Platform deploy status</h2><span class="subtle small">Live local file checks per platform</span></div>${table(['Target','Status','Skill path','Skills','MCP config','Hooks'], rows)}`;
+}
+async function syncAction(action, confirmText='') {
+  const result = await api(`/api/sync/${action}`, {method:'POST', body: JSON.stringify({confirm: confirmText})}).catch(e => ({ok:false, error:e.message}));
+  if (!result.ok) alert(result.error || 'Deploy failed.');
+  await refresh();
+}
+document.querySelectorAll('.tab').forEach(btn => btn.onclick = () => { document.querySelectorAll('.tab, section').forEach(el => el.classList.remove('active')); btn.classList.add('active'); document.getElementById(btn.dataset.tab).classList.add('active'); });
+document.getElementById('refreshBtn').onclick = refresh;
+document.getElementById('deployBtn').onclick = () => { const c = prompt('Type deploy to run nexus sync.'); if (c) syncAction('deploy', c); };
+refresh().catch(e => document.body.insertAdjacentHTML('afterbegin', `<pre>${esc(e.stack || e.message)}</pre>`));
+</script>
+</body>
+</html>'''
+
+
+def make_dashboard_handler(repo_dir: Path):
+    cfg_ref = {"cfg": Config(repo_dir)}
+
+    class DashboardHandler(BaseHTTPRequestHandler):
+        def log_message(self, format, *args):
+            print(f"dashboard: {format % args}", file=sys.stderr)
+
+        def _cfg(self) -> Config:
+            return cfg_ref["cfg"]
+
+        def _refresh_cfg(self) -> Config:
+            cfg_ref["cfg"] = Config(repo_dir)
+            return cfg_ref["cfg"]
+
+        def do_GET(self):
+            if self.path == "/":
+                _text_response(self, 200, render_dashboard_html(), "text/html; charset=utf-8")
+            elif self.path == "/api/state":
+                _json_response(self, 200, build_dashboard_model(self._cfg()))
+            else:
+                _json_response(self, 404, {"ok": False, "error": "Not found"})
+
+        def do_POST(self):
+            try:
+                payload = _read_json_body(self)
+                if self.path == "/api/targets/save":
+                    result = update_manifest_targets(self._cfg(), payload.get("targets", []))
+                    self._refresh_cfg()
+                    _json_response(self, 200, result)
+                elif self.path == "/api/sync/deploy":
+                    result = run_dashboard_sync_action(self._refresh_cfg(), "deploy", payload)
+                    self._refresh_cfg()
+                    _json_response(self, 200 if result.get("ok") else 400, result)
+                else:
+                    _json_response(self, 404, {"ok": False, "error": "Not found"})
+            except ValueError as exc:
+                _json_response(self, 400, {"ok": False, "error": str(exc)})
+            except Exception as exc:
+                _json_response(self, 500, {"ok": False, "error": str(exc)})
+
+    return DashboardHandler
+
+
 # ============================================================
 # SUBCOMMANDS
 # ============================================================
+
+def _read_hook_commands(path: Path) -> list[str]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    return _walk_hook_commands(data.get("hooks", {}))
+
+
+def collect_hook_review(discoveries: list[dict], targets: list[str]) -> list[dict]:
+    rows = []
+    for pkg in discoveries:
+        selected = set(package_targets(pkg, targets))
+        for target, key in [
+            ("claude", "hooks_claude"),
+            ("cursor", "hooks_cursor"),
+            ("codex", "hooks_codex"),
+        ]:
+            hook_path = pkg.get(key)
+            if target not in selected or not hook_path:
+                continue
+            commands = [
+                Deployer._substitute_package_root(command, pkg["path"])
+                for command in _read_hook_commands(Path(hook_path))
+            ]
+            rows.append({
+                "package": pkg["name"],
+                "target": target,
+                "path": hook_path,
+                "commands": commands,
+            })
+    return rows
+
+
+def show_hook_review(discoveries: list[dict], targets: list[str]):
+    rows = collect_hook_review(discoveries, targets)
+    if not rows:
+        return
+    info("Hook review - executable hook commands to be installed:")
+    print(file=sys.stderr)
+    for row in rows:
+        if row["commands"]:
+            for command in row["commands"]:
+                print(f"    {row['package']:30s} {row['target']:8s} {command}", file=sys.stderr)
+        else:
+            print(f"    {row['package']:30s} {row['target']:8s} {row['path']}", file=sys.stderr)
+    print(file=sys.stderr)
+
 
 def cmd_sync(cfg: Config, args):
     # Check deps
@@ -1282,6 +2606,23 @@ def cmd_sync(cfg: Config, args):
             pm.discover(pkg_path, pkg_name, pkg_spec.get("sparse_paths")),
             pkg_spec,
         )
+        if repo:
+            resolved_commit = _resolved_commit_from_cache_path(str(pkg_path))
+            discovery["source"] = {
+                "type": "github",
+                "repo": repo,
+                "source_url": f"https://github.com/{repo}",
+                "requested_ref": ref,
+                "resolved_commit": resolved_commit,
+                "cache_path": str(pkg_path),
+                "sparse_paths": pkg_spec.get("sparse_paths", []),
+            }
+        else:
+            discovery["source"] = {
+                "type": "local",
+                "path": local_path,
+                "resolved_path": str(pkg_path),
+            }
         discoveries.append(discovery)
 
         parts = [f"{len(discovery['skills'])} skills"]
@@ -1300,11 +2641,13 @@ def cmd_sync(cfg: Config, args):
     # Security review
     if not args.yes and not args.dry_run:
         show_review(all_mcps)
+        show_hook_review(discoveries, cfg.targets)
         if not confirm("Apply these changes?"):
             print("Aborted.")
             return
     elif args.dry_run:
         show_review(all_mcps)
+        show_hook_review(discoveries, cfg.targets)
         info("Dry run - no target configs or lockfiles written.")
         print(file=sys.stderr)
         info("Would deploy:")
@@ -1353,7 +2696,7 @@ def cmd_sync(cfg: Config, args):
 
     # Phase 4: Lockfile
     info("Generating lockfile...")
-    lock = generate_lockfile(discoveries, cfg.data, cfg.targets, cfg.repo_dir, all_mcps)
+    lock = generate_lockfile(discoveries, cfg.data, cfg.targets, cfg.repo_dir, all_mcps, cfg.yml_path)
     write_lockfile(lock, cfg.lockfile_path)
     ok(f"{cfg.lockfile_path.name} written")
 
@@ -1579,6 +2922,38 @@ def cmd_doctor(cfg: Config, _args):
     print()
 
 
+def cmd_dashboard(cfg: Config, args):
+    if getattr(args, "json", False):
+        print(json.dumps(build_dashboard_model(cfg), indent=2, sort_keys=False))
+        return
+
+    host = getattr(args, "host", "127.0.0.1")
+    port = getattr(args, "port", 8765)
+    if host != "127.0.0.1" and not getattr(args, "allow_remote", False):
+        print("Error: dashboard binds to 127.0.0.1 by default. Pass --allow-remote to use another host.", file=sys.stderr)
+        sys.exit(1)
+
+    handler = make_dashboard_handler(cfg.repo_dir)
+    try:
+        server = ThreadingHTTPServer((host, port), handler)
+    except OSError as exc:
+        print(f"Error: could not start dashboard on {host}:{port}: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    url = f"http://{host}:{port}/"
+    info(f"Agent Nexus dashboard running at {url}")
+    print("  Press Ctrl-C to stop.", file=sys.stderr)
+    if not getattr(args, "no_open", False):
+        webbrowser.open(url)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print(file=sys.stderr)
+        info("Dashboard stopped.")
+    finally:
+        server.server_close()
+
+
 def cmd_clean(cfg: Config, _args):
     info("Cleaning nexus artifacts...")
 
@@ -1662,7 +3037,17 @@ def main():
     sp_sync.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
 
     sub.add_parser("list", help="Show installed packages, skills, and MCP servers")
+    sp_audit = sub.add_parser("audit", help="Read-only inventory of existing target config")
+    sp_audit.add_argument("--json", action="store_true", help="Print machine-readable audit output")
+    sp_audit.add_argument("--target", choices=sorted(TARGET_REGISTRY), help="Audit one target")
+    sp_audit.add_argument("--redact-home", action="store_true", help="Replace the home directory prefix with ~ in paths")
     sub.add_parser("doctor", help="Run diagnostics and health checks")
+    sp_dashboard = sub.add_parser("dashboard", help="Open the local management dashboard")
+    sp_dashboard.add_argument("--host", default="127.0.0.1", help="Dashboard bind host (default: 127.0.0.1)")
+    sp_dashboard.add_argument("--port", type=int, default=8765, help="Dashboard port (default: 8765)")
+    sp_dashboard.add_argument("--no-open", action="store_true", help="Do not open the dashboard in a browser")
+    sp_dashboard.add_argument("--json", action="store_true", help="Print dashboard state as JSON and exit")
+    sp_dashboard.add_argument("--allow-remote", action="store_true", help="Allow binding to a non-loopback host")
     sub.add_parser("clean", help="Remove all nexus-managed artifacts")
     sp_init = sub.add_parser("init", help="Create nexus.personal.yml from the example manifest")
     sp_init.add_argument("--force", action="store_true", help="Overwrite an existing nexus.personal.yml")
@@ -1674,7 +3059,9 @@ def main():
     dispatch = {
         "sync": cmd_sync,
         "list": cmd_list,
+        "audit": cmd_audit,
         "doctor": cmd_doctor,
+        "dashboard": cmd_dashboard,
         "clean": cmd_clean,
         "init": cmd_init,
         "version": lambda _c, _a: print(f"nexus v{NEXUS_VERSION}"),

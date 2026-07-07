@@ -6,6 +6,25 @@ environments. A skeptical developer should be able to see what Nexus writes,
 how it preserves local configuration, how it complements native tools, and how
 to verify a sync before touching target IDE config.
 
+## Competitive Improvement Focus
+
+The current public positioning should be: Agent Nexus is the safe package
+manager for serious agent workspaces. It installs MCP servers, skills, hooks,
+and GitHub agent packages across Claude Code, Cursor, Google Antigravity, and
+Codex from one personal manifest, with dry-run review, native config sync,
+lockfile traceability, and doctor verification.
+
+AGHub and GAAL are the key competitors to keep in mind. AGHub wins on broad
+22+/23-agent hub positioning and MCP/portable-skill management. GAAL wins on
+polished one-YAML machine sync, `audit`/`init`/`dry-run` onboarding, repo/content
+sync, and local-first trust docs. Nexus should not try to out-breadth AGHub or
+out-dotfiles GAAL first; it should close the trust/onboarding gaps while owning
+package-oriented safety and traceability.
+
+Use `COMPETITIVE_IMPROVEMENT_PLAN.md` as the long-running implementation plan.
+Start there when working on competitive improvements, then record task-local
+progress back in this `PLAN.md`.
+
 ## Current Findings
 - README and release copy now avoid stale negative competitor claims and position
   Nexus around verified behavior: one manifest, asset auto-discovery, hook
@@ -40,6 +59,19 @@ to verify a sync before touching target IDE config.
   tested before upstream `main` is updated.
 
 ## Progress
+- [x] Completed competitive roadmap Phase 0 baseline: read required context/code/docs, captured CLI help, checked gitignored local-only files, and ran baseline verification.
+- [x] Added public docs for target/resource support, manifest fields, package behavior, and honest comparison positioning.
+- [x] Added copyable example manifests for minimal, Context Harness, MCP-only, team, and package-overlay setups.
+- [x] Linked the new docs and examples from README so the top-level public entry point points to deeper references.
+- [x] Added `docs/package-trust.md` to explain package sources, refs, pinning, discovery safety, executable surfaces, dry-run review, lockfile traceability, and planned inspection commands.
+- [x] Added `docs/mcp.md` to document stdio/SSE/HTTP MCP schema, per-target output formats, merge preservation, managed/unmanaged semantics, Codex managed TOML blocks, and stale pruning.
+- [x] Added `nexus audit` read-only discovery with human/JSON output, target filtering, home-path redaction, MCP env/header redaction, skill stale-symlink detection, and hook managed/unmanaged counts.
+- [x] Updated README, security model, target matrix, and demo transcript so audit is the first trust-building step.
+- [x] Enriched lockfile metadata with manifest path, package source metadata, GitHub source URL/ref/commit/cache details, local path details, hook deployment targets, and floating-ref warnings.
+- [x] Added MCP golden-style coverage for empty JSON config creation, managed stdio updates, unmanaged/local key preservation, stale managed pruning, skipped optional preservation, Codex outside-block preservation, and JSON formatting behavior.
+- [x] Added hook security review output in dry-run/interactive sync, `docs/hooks.md`, and Cursor/Codex hook lifecycle tests covering command visibility, dedupe, unmanaged preservation, and stale managed pruning.
+- [x] Added Phase 6 demo proof assets: `docs/demo-before-after.md`, `docs/demo-recording.md`, `docs/screenshot-checklist.md`, and README links to the demo materials.
+- [x] Completed Phase 7 clone-based install polish: README now recommends `scripts/install-local.sh`, and the installer refuses to replace unrelated `nexus` commands unless forced, supports safe uninstall, and has focused tests.
 - [x] Added `RELEASE_GOAL.md` for Agent Nexus release readiness.
 - [x] Replaced stale README competitor comparison with verified positioning and
   a target/asset matrix.
@@ -63,6 +95,39 @@ to verify a sync before touching target IDE config.
   update README and demo docs.
 
 ## Verification
+- `python -m pytest tests/test_nexus.py -k install_local` exits 0 with 4 passed after install polish.
+- `python -m pytest tests` exits 0 with 57 passed after install polish.
+- `python -m py_compile nexus.py` exits 0 after install polish.
+- Markdown fence validation exits 0 after install polish.
+- `python -m pytest tests` exits 0 with 53 passed after adding demo proof assets.
+- `python -m py_compile nexus.py` exits 0 after adding demo proof assets.
+- Markdown fence validation exits 0 after adding demo proof assets.
+- Example manifest YAML validation exits 0 after adding demo proof assets.
+- `python -m pytest tests` exits 0 with 53 passed after hook lifecycle hardening.
+- `python -m py_compile nexus.py` exits 0 after hook lifecycle hardening.
+- `python nexus.py sync --dry-run` exits 0 and now prints hook command review output before deployment plan.
+- Markdown fence validation exits 0 after hook docs updates.
+- `python -m pytest tests` exits 0 with 52 passed after adding MCP golden-style coverage.
+- `python -m py_compile nexus.py` exits 0 after adding MCP golden-style coverage.
+- Markdown fence validation exits 0 after marking MCP roadmap coverage complete.
+- `python -m pytest tests` exits 0 with 48 passed after enriching lockfile metadata.
+- `python -m py_compile nexus.py` exits 0 after enriching lockfile metadata.
+- Markdown fence validation exits 0 after lockfile docs updates.
+- `python -m pytest tests` exits 0 with 47 passed after implementing `nexus audit`.
+- `python -m py_compile nexus.py` exits 0 after implementing `nexus audit`.
+- `python nexus.py audit --json --redact-home` exits 0 and prints redacted machine-readable inventory.
+- `python nexus.py audit --target codex --redact-home` exits 0 and prints human-readable target inventory.
+- Markdown fence validation exits 0 after audit docs updates.
+- `python -m pytest tests` exits 0 with 41 passed after adding package trust/MCP docs.
+- `python -m py_compile nexus.py` exits 0 after adding package trust/MCP docs.
+- Markdown fence validation exits 0 for README, competitive roadmap, and all top-level docs files.
+- `python -m pytest tests` exits 0 with 41 passed after adding docs/examples.
+- `python -m py_compile nexus.py` exits 0 after adding docs/examples.
+- Markdown fence validation exits 0 for README, competitive roadmap, and docs files.
+- Example manifest YAML validation exits 0 for all files under `examples/*.yml`.
+- Baseline `python nexus.py sync --dry-run` exits 0 and shows current package/MCP deploy plan without writing target configs.
+- Baseline `python nexus.py doctor` exits 0 against the current local deployment.
+- Captured CLI help for top-level, `sync`, `list`, `doctor`, `dashboard`, `clean`, `init`, and `version`.
 - `python3 -m pytest -q -p no:cacheprovider tests/test_nexus.py` exits 0 with
   33 passed.
 - `python3 -c "import py_compile; py_compile.compile('nexus.py', cfile='/tmp/agent-nexus-nexus.pyc', doraise=True)"`

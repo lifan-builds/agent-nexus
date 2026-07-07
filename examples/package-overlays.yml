@@ -1,0 +1,35 @@
+name: package-overlays
+version: 1.0.0
+
+targets:
+  - claude
+  - cursor
+  - antigravity
+  - codex
+
+packages:
+  - repo: lifan-builds/context-harness
+    ref: main
+    hooks:
+      - codex
+    skill_overrides:
+      context-init:
+        skill_frontmatter:
+          disable-model-invocation: true
+      set-goal:
+        targets: [codex]
+        skill_frontmatter:
+          disable-model-invocation: true
+        agents_openai:
+          interface:
+            display_name: Set Goal
+            short_description: Start or update a context-harness goal when explicitly requested.
+          policy:
+            allow_implicit_invocation: false
+
+mcps:
+  - name: context7
+    command: npx
+    args: ["-y", "@upstash/context7-mcp@latest"]
+
+optional_mcps: []

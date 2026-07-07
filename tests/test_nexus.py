@@ -1,5 +1,7 @@
 import importlib.util
 import json
+import os
+import subprocess
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -8,6 +10,76 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("nexus", ROOT / "nexus.py")
 nexus = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(nexus)
+
+
+def _run_installer(bin_dir: Path, *args: str):
+    env = os.environ.copy()
+    env["NEXUS_BIN_DIR"] = str(bin_dir)
+    return subprocess.run(
+        [str(ROOT / "scripts" / "install-local.sh"), *args],
+        text=True,
+        capture_output=True,
+        env=env,
+        check=False,
+    )
+
+
+def test_install_local_creates_reversible_wrapper_symlink(tmp_path):
+    bin_dir = tmp_path / "bin"
+
+    result = _run_installer(bin_dir)
+
+    link_path = bin_dir / "nexus"
+    assert result.returncode == 0, result.stderr
+    assert link_path.is_symlink()
+    assert os.readlink(link_path) == str(ROOT / "nexus.py")
+    assert "scripts/install-local.sh --uninstall" in result.stdout
+
+    uninstall = _run_installer(bin_dir, "--uninstall")
+
+    assert uninstall.returncode == 0, uninstall.stderr
+    assert not link_path.exists()
+
+
+def test_install_local_refuses_to_replace_user_owned_command(tmp_path):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    link_path = bin_dir / "nexus"
+    link_path.write_text("#!/bin/sh\n")
+
+    result = _run_installer(bin_dir)
+
+    assert result.returncode == 1
+    assert link_path.read_text() == "#!/bin/sh\n"
+    assert "Refusing to replace existing non-symlink file" in result.stderr
+
+
+def test_install_local_refuses_to_replace_other_symlink_without_force(tmp_path):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    other = tmp_path / "other-nexus"
+    other.write_text("#!/bin/sh\n")
+    link_path = bin_dir / "nexus"
+    link_path.symlink_to(other)
+
+    result = _run_installer(bin_dir)
+
+    assert result.returncode == 1
+    assert os.readlink(link_path) == str(other)
+    assert "Refusing to replace existing symlink" in result.stderr
+
+
+def test_install_local_force_replaces_existing_command(tmp_path):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    link_path = bin_dir / "nexus"
+    link_path.write_text("#!/bin/sh\n")
+
+    result = _run_installer(bin_dir, "--force")
+
+    assert result.returncode == 0, result.stderr
+    assert link_path.is_symlink()
+    assert os.readlink(link_path) == str(ROOT / "nexus.py")
 
 
 def test_antigravity_sse_uses_server_url():
@@ -197,6 +269,106 @@ def test_codex_mcp_prune_removes_stale_managed_server_from_toml_block(tmp_path):
     assert "# END NEXUS MANAGED MCP SERVERS" in output
 
 
+def test_json_mcp_sync_adds_stdio_server_to_empty_config(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.targets = ["fake"]
+    cfg.data = {"packages": [], "mcps": [], "targets": cfg.targets}
+    mcp_path = tmp_path / "nested" / "mcp.json"
+    cfg.mcp_path = lambda _target: mcp_path
+    cfg.mcp_format = lambda _target: "mcp_servers_json"
+
+    nexus.Deployer(cfg).sync_mcps([{
+        "name": "docs",
+        "command": "uvx",
+        "args": ["mcp-docs"],
+    }])
+
+    assert json.loads(mcp_path.read_text()) == {
+        "mcpServers": {
+            "docs": {
+                "type": "stdio",
+                "command": "uvx",
+                "args": ["mcp-docs"],
+                "env": {"PATH": nexus.STANDARD_PATH},
+            }
+        }
+    }
+    assert mcp_path.read_text().endswith("\n")
+    assert '\n  "mcpServers": {' in mcp_path.read_text()
+
+
+def test_json_mcp_prune_removes_only_stale_managed_servers(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.targets = ["fake"]
+    cfg.data = {"packages": [], "mcps": [], "targets": cfg.targets}
+    mcp_path = tmp_path / "mcp.json"
+    cfg.mcp_path = lambda _target: mcp_path
+    cfg.mcp_format = lambda _target: "mcp_servers_json"
+    mcp_path.write_text(json.dumps({
+        "mcpServers": {
+            "keep": {"command": "uvx"},
+            "stale": {"command": "uvx"},
+            "user": {"command": "custom"},
+        }
+    }))
+
+    nexus.Deployer(cfg).prune_mcps(
+        {"keep"},
+        {"mcps": {"managed": [{"name": "keep"}, {"name": "stale"}]}},
+    )
+
+    servers = json.loads(mcp_path.read_text())["mcpServers"]
+    assert sorted(servers) == ["keep", "user"]
+
+
+def test_prune_does_not_remove_skipped_optional_mcp(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.targets = ["fake"]
+    cfg.data = {"packages": [], "mcps": [], "targets": cfg.targets}
+    mcp_path = tmp_path / "mcp.json"
+    cfg.mcp_path = lambda _target: mcp_path
+    cfg.mcp_format = lambda _target: "mcp_servers_json"
+    mcp_path.write_text(json.dumps({
+        "mcpServers": {
+            "always": {"command": "uvx"},
+            "github": {"command": "npx"},
+        }
+    }))
+
+    nexus.Deployer(cfg).prune_mcps(
+        {"always"},
+        {"mcps": {"managed": [{"name": "always"}]}},
+    )
+
+    assert sorted(json.loads(mcp_path.read_text())["mcpServers"]) == ["always", "github"]
+
+
+def test_codex_mcp_sync_preserves_content_before_and_after_managed_block(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.yml_path = tmp_path / "nexus.personal.yml"
+    mcp_path = tmp_path / "config.toml"
+    mcp_path.write_text(
+        '[profile.default]\n'
+        'model = "gpt-5"\n\n'
+        '# BEGIN NEXUS MANAGED MCP SERVERS\n'
+        '[mcp_servers."old"]\n'
+        'command = "old"\n'
+        '# END NEXUS MANAGED MCP SERVERS\n\n'
+        '[tools]\n'
+        'enabled = true\n'
+    )
+
+    nexus.Deployer(cfg)._sync_mcps_for_codex([
+        {"name": "docs", "command": "uvx", "args": ["mcp-docs"]}
+    ], mcp_path)
+
+    output = mcp_path.read_text()
+    assert '[profile.default]\nmodel = "gpt-5"' in output
+    assert '[tools]\nenabled = true' in output
+    assert '[mcp_servers."docs"]' in output
+    assert 'old' not in output
+
+
 def test_lockfile_records_only_actual_managed_mcps(tmp_path):
     manifest = {
         "mcps": [
@@ -369,6 +541,24 @@ def test_codex_agents_openai_override_creates_generated_skill_dir(tmp_path):
     assert metadata["policy"]["allow_implicit_invocation"] is False
 
 
+def test_skill_frontmatter_override_creates_generated_skill_dir(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    skill = _write_skill(tmp_path / "cache" / "pkg" / "skills" / "example", "example")
+    deployer = nexus.Deployer(cfg)
+    pkg = _overlay_pkg(skill, targets=["codex"])
+    pkg["skill_overrides"]["example"] = {
+        "targets": ["codex"],
+        "skill_frontmatter": {"disable-model-invocation": True},
+    }
+
+    deployer.deploy_skills([pkg])
+
+    generated = cfg.generated_skill_path("codex", "example")
+    link = cfg.skill_path("codex") / "example"
+    assert link.resolve() == generated
+    assert "disable-model-invocation: true" in (generated / "SKILL.md").read_text()
+
+
 def test_codex_only_overlay_leaves_other_targets_linked_to_source(tmp_path):
     cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
     cfg.targets = ["codex", "fake"]
@@ -446,6 +636,34 @@ def test_generate_lockfile_records_skill_overlays(tmp_path):
         "type": "agents_openai",
         "path": str(tmp_path / ".nexus" / "generated" / "codex" / "skills" / "example"),
     }]
+
+
+def test_generate_lockfile_records_package_source_metadata(tmp_path):
+    skill = _write_skill(tmp_path / "cache" / "pkg" / "skills" / "example", "example")
+    pkg = {
+        "name": "pkg",
+        "path": str(tmp_path / ".nexus" / "cache" / "github.com" / "org" / "pkg" / "abc123"),
+        "skills": [{"name": "example", "path": str(skill)}],
+        "hooks_codex": str(tmp_path / "hooks-codex.json"),
+        "source": {
+            "type": "github",
+            "repo": "org/pkg",
+            "source_url": "https://github.com/org/pkg",
+            "requested_ref": "main",
+            "resolved_commit": "abc123",
+            "cache_path": str(tmp_path / ".nexus" / "cache" / "github.com" / "org" / "pkg" / "abc123"),
+            "sparse_paths": ["skills/example"],
+        },
+    }
+
+    lock = nexus.generate_lockfile([pkg], {}, ["codex"], tmp_path, manifest_path=tmp_path / "nexus.personal.yml")
+    entry = lock["packages"][0]
+
+    assert lock["manifest_path"] == str(tmp_path / "nexus.personal.yml")
+    assert entry["cache_path"] == pkg["path"]
+    assert entry["source"] == pkg["source"]
+    assert entry["hook_deployments"] == ["codex"]
+    assert "floating ref 'main'" in entry["warnings"][0]
 
 
 def test_dry_run_mentions_skill_overlays(tmp_path, capsys):
@@ -578,6 +796,35 @@ def test_package_hooks_false_disables_hook_deployment():
     assert filtered["hooks_codex"] is None
 
 
+def test_cursor_hook_merge_deduplicates_normalized_entries(tmp_path):
+    first = tmp_path / "pkg1" / "hooks" / "hooks-cursor.json"
+    second = tmp_path / "pkg2" / "hooks" / "hooks-cursor.json"
+    first.parent.mkdir(parents=True)
+    second.parent.mkdir(parents=True)
+    first.write_text(json.dumps({
+        "hooks": {
+            "BeforeSubmit": [
+                {"_nexus": {"package": "one"}, "command": "echo shared"},
+            ]
+        }
+    }))
+    second.write_text(json.dumps({
+        "hooks": {
+            "BeforeSubmit": [
+                {"_nexus": {"package": "two"}, "command": "echo shared"},
+                {"command": "echo unique"},
+            ]
+        }
+    }))
+
+    merged = nexus.Deployer._merge_hooks([first, second])
+
+    assert merged["hooks"]["BeforeSubmit"] == [
+        {"_nexus": {"package": "one"}, "command": "echo shared"},
+        {"command": "echo unique"},
+    ]
+
+
 def test_codex_hook_merge_substitutes_package_root(tmp_path):
     hook_file = _write_codex_hook(
         tmp_path / "pkg",
@@ -679,8 +926,250 @@ def test_dry_run_mentions_codex_hooks_without_writing_files(tmp_path, capsys):
     nexus.cmd_sync(cfg, SimpleNamespace(all=False, dry_run=True, yes=False))
 
     captured = capsys.readouterr()
+    assert "Hook review - executable hook commands to be installed" in captured.err
+    assert f'node "{pkg}/hook.js" --nexus-package pkg' in captured.err
     assert "hooks: pkg -> codex" in captured.err
     assert not (codex_home / "hooks.json").exists()
+
+
+def test_dashboard_model_includes_inventory_and_redacts_mcp_env(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    skill = _write_skill(tmp_path / "cache" / "pkg" / "skills" / "example", "example")
+    cfg.data = {
+        "packages": [{"path": "cache/pkg"}],
+        "mcps": [{
+            "name": "secret-mcp",
+            "command": "npx",
+            "args": ["-y", "secret-mcp"],
+            "env": {"API_TOKEN": "supersecret"},
+        }],
+        "optional_mcps": [],
+        "targets": ["codex"],
+    }
+    nexus.write_lockfile({
+        "lockfile_version": 1,
+        "packages": [{
+            "name": "pkg",
+            "path": str(skill.parents[1]),
+            "discovered": {"skills": ["example"]},
+            "deployed_to": ["codex"],
+        }],
+        "mcps": {"managed": [{"name": "secret-mcp"}]},
+    }, cfg.lockfile_path)
+
+    model = nexus.build_dashboard_model(cfg)
+    encoded = json.dumps(model)
+
+    assert model["summary"]["packages"] == 1
+    assert model["summary"]["skills"] == 1
+    assert model["summary"]["implicit_skills"] == 1
+    assert model["deployment"]["global_targets"] == ["codex"]
+    assert model["packages"][0]["uses_global_targets"] is True
+    assert "ref" not in model["packages"][0]
+    assert model["mcps"][0]["env_keys"] == ["API_TOKEN"]
+    assert model["mcps"][0]["token_consumption"]["static_tokens"] > 0
+    assert "supersecret" not in encoded
+    assert model["skills"][0]["static_tokens"] > 0
+
+
+def test_dashboard_model_handles_missing_lockfile(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.data = {"packages": [], "mcps": [], "targets": ["codex"]}
+
+    model = nexus.build_dashboard_model(cfg)
+
+    assert model["meta"]["lockfile_exists"] is False
+    assert any("missing" in warning for warning in model["warnings"])
+
+
+def test_dashboard_manifest_validation_and_atomic_save(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    text = "name: edited\ntargets: [codex]\npackages: []\nmcps: []\n"
+
+    assert nexus.validate_dashboard_manifest({"packages": "bad"})
+    nexus.write_manifest_atomically(cfg, text)
+
+    assert cfg.yml_path.read_text() == text
+    assert nexus.parse_manifest_text(cfg.yml_path.read_text())["name"] == "edited"
+
+
+def test_dashboard_redacted_manifest_text_hides_and_restores_secret_values(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.yml_path.write_text(
+        "# keep this comment\n"
+        "targets:\n"
+        "  - codex\n"
+        "mcps:\n"
+        "  - name: nitan\n"
+        "    command: npx\n"
+        "    env:\n"
+        "      PASSWORD: secret-value\n"
+    )
+
+    text = nexus.load_redacted_manifest_text(cfg)
+
+    assert "# keep this comment" in text
+    assert "secret-value" not in text
+    assert "PASSWORD: REDACTED_BY_NEXUS_DASHBOARD" in text
+
+    edited = text.replace("  - codex\n", "  - codex\n  - claude\n")
+    nexus.update_manifest_from_dashboard(cfg, {"text": edited})
+    saved = nexus.parse_manifest_text(cfg.yml_path.read_text())
+
+    assert saved["targets"] == ["codex", "claude"]
+    assert saved["mcps"][0]["env"]["PASSWORD"] == "secret-value"
+
+
+def test_dashboard_target_policy_save_updates_targets_only(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.yml_path.write_text(
+        "name: local\n"
+        "targets:\n"
+        "  - codex  # ~/.codex/skills\n"
+        "packages:\n"
+        "  - path: pkg\n"
+    )
+
+    result = nexus.update_manifest_targets(cfg, ["claude", "cursor"])
+    saved = cfg.yml_path.read_text()
+    data = nexus.parse_manifest_text(saved)
+
+    assert result["ok"] is True
+    assert data["targets"] == ["claude", "cursor"]
+    assert data["packages"] == [{"path": "pkg"}]
+
+
+def test_cmd_dashboard_json_outputs_valid_json(tmp_path, capsys):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.data = {"packages": [], "mcps": [], "targets": ["codex"]}
+
+    nexus.cmd_dashboard(cfg, SimpleNamespace(json=True))
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["meta"]["nexus_version"] == nexus.NEXUS_VERSION
+
+
+def test_dashboard_deploy_requires_confirmation(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    result = nexus.run_dashboard_sync_action(cfg, "deploy", {"confirm": "nope"})
+
+    assert result["ok"] is False
+    assert "confirm" in result["error"]
+
+
+def test_audit_empty_machine_uses_all_targets_without_manifest(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.yml_path = tmp_path / "missing.yml"
+    cfg.lockfile_path = tmp_path / "missing.lock.yml"
+    cfg.targets = ["codex"]
+    cfg.data = {"packages": [], "mcps": [], "targets": ["codex"]}
+
+    model = nexus.build_audit_model(cfg, redact_home=True)
+
+    assert [target["name"] for target in model["targets"]] == ["claude", "cursor", "antigravity", "codex"]
+    assert model["meta"]["manifest_exists"] is False
+    assert model["meta"]["lockfile_exists"] is False
+
+
+def test_audit_json_redacts_env_values_and_classifies_mcp_servers(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.targets = ["claude"]
+    cfg.data = {"packages": [], "mcps": [], "targets": ["claude"]}
+    cfg.yml_path.write_text("targets: [claude]\n")
+    mcp_path = tmp_path / ".claude" / ".mcp.json"
+    mcp_path.parent.mkdir()
+    mcp_path.write_text(json.dumps({
+        "mcpServers": {
+            "managed": {
+                "type": "stdio",
+                "command": "npx",
+                "args": ["-y", "managed"],
+                "env": {"TOKEN": "secret-value"},
+            },
+            "user": {"type": "sse", "url": "https://example.com/mcp"},
+        },
+    }))
+    cfg.mcp_path = lambda _target: mcp_path
+    nexus.write_lockfile({"mcps": {"managed": [{"name": "managed"}]}}, cfg.lockfile_path)
+
+    model = nexus.build_audit_model(cfg)
+    encoded = json.dumps(model)
+    servers = {server["name"]: server for server in model["targets"][0]["mcp"]["servers"]}
+
+    assert model["targets"][0]["mcp"]["managed"] == ["managed"]
+    assert model["targets"][0]["mcp"]["unmanaged"] == ["user"]
+    assert servers["managed"]["env_keys"] == ["TOKEN"]
+    assert "secret-value" not in encoded
+
+
+def test_audit_codex_managed_block_and_hooks(tmp_path):
+    codex_home = tmp_path / "codex-home"
+    cfg = _fake_cfg(tmp_path, codex_home)
+    cfg.targets = ["codex"]
+    cfg.data = {"packages": [], "mcps": [], "targets": ["codex"]}
+    cfg.yml_path.write_text("targets: [codex]\n")
+    mcp_path = tmp_path / "config.toml"
+    mcp_path.write_text(
+        '# BEGIN NEXUS MANAGED MCP SERVERS\n'
+        '[mcp_servers."managed"]\n'
+        'command = "npx"\n'
+        'args = ["-y", "managed"]\n'
+        '# END NEXUS MANAGED MCP SERVERS\n\n'
+        '[mcp_servers."user"]\n'
+        'url = "https://example.com/mcp"\n'
+    )
+    cfg.mcp_path = lambda _target: mcp_path
+    cfg.mcp_format = lambda _target: "codex_toml"
+    hooks_path = codex_home / "hooks.json"
+    hooks_path.parent.mkdir()
+    hooks_path.write_text(json.dumps({
+        "hooks": {
+            "SessionStart": [
+                {"hooks": [
+                    {"type": "command", "command": "node hook.js --nexus-package pkg"},
+                    {"type": "command", "command": "echo user"},
+                ]}
+            ]
+        }
+    }))
+
+    target = nexus.build_audit_model(cfg)["targets"][0]
+
+    assert target["mcp"]["managed"] == ["managed"]
+    assert target["mcp"]["unmanaged"] == ["user"]
+    assert target["hooks"]["managed"] == 1
+    assert target["hooks"]["unmanaged"] == 1
+
+
+def test_audit_skill_symlink_and_unmanaged_detection(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.targets = ["codex"]
+    cfg.data = {"packages": [], "mcps": [], "targets": ["codex"]}
+    cfg.yml_path.write_text("targets: [codex]\n")
+    source = _write_skill(tmp_path / ".nexus" / "cache" / "github.com" / "org" / "pkg" / "abc" / "skills" / "managed", "managed")
+    skill_dir = cfg.skill_path("codex")
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "managed").symlink_to(source)
+    (skill_dir / "stale").symlink_to(tmp_path / "missing")
+    (skill_dir / "user-skill").mkdir()
+
+    skills = nexus.build_audit_model(cfg)["targets"][0]["skills"]
+
+    assert skills["nexus_symlinks"] == ["managed"]
+    assert skills["stale_symlinks"] == ["stale"]
+    assert skills["unmanaged_dirs"] == ["user-skill"]
+
+
+def test_cmd_audit_json_outputs_valid_json(tmp_path, capsys):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+
+    nexus.cmd_audit(cfg, SimpleNamespace(json=True, target="codex", redact_home=True))
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["targets"][0]["name"] == "codex"
+    assert "secret" not in captured.out.lower()
 
 
 def _write_skill(path: Path, name: str) -> Path:

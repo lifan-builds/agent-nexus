@@ -1,37 +1,37 @@
 {
   "schema": 1,
-  "updated_at": "2026-07-06",
-  "source_hash": "197fd5a94d2b2612a398ffaefcf78b0a24273f8f1807753d6c167bc0f8b97ffa",
+  "updated_at": "2026-07-07",
+  "source_hash": "e3592d35324cc7af6fa8fe133bee24577877c646c7e7db6cd83124b17f590aa3",
   "sources": [
     {
       "path": "CONTEXT.md",
-      "sha256": "44a0203946d84da2a60f0c128d3568bcdbd6fe5b243fcfb0679c516ce44f4451",
+      "sha256": "d5d9bb70deb3a7e6338c4b5656ec3c6656531cab4872589db164611953c9c1f8",
       "lines": 155
     },
     {
       "path": "NOW.md",
-      "sha256": "7bd818275416a33dc5e2a3152587b1857ec08b49445d9f0a9c764e1c2047e49e",
-      "lines": 15
+      "sha256": "5335305d36eb0f14f4503a2b5926821884ca4f3989649d426f6dc01064667a3a",
+      "lines": 16
     },
     {
       "path": "PLAN.md",
-      "sha256": "7086b2f8f9ae1bd6c41e069e77db81506c9c7d2aa703d8f44b702eb647661c06",
-      "lines": 93
+      "sha256": "ffea20061ac2e423b0b87ef2f5003a1a791ac9a3f24aa8976cccba2e085fcc09",
+      "lines": 158
     }
   ],
   "cards": [
     {
       "id": "ctx-context-project",
       "title": "CONTEXT.md: Project",
-      "summary": "agent-nexus is a centralized agent environment manager that deploys skills, hooks, and MCP servers to AI IDEs (Claude Code, Cursor, Google Antigravity, Codex) from a single manifest. The CLI (nexus.py) handles the ful...",
+      "summary": "agent-nexus is the safe package manager for serious agent workspaces: it installs MCP servers, skills, hooks, and GitHub agent packages across AI IDEs (Claude Code, Cursor, Google Antigravity, Codex) from one personal...",
       "source": "CONTEXT.md#project",
       "source_path": "CONTEXT.md",
       "kind": "project",
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
-      "tokens_est": 188,
+      "recency": "2026-07-07",
+      "tokens_est": 260,
       "tags": [
         "context",
         "project"
@@ -41,9 +41,9 @@
       ],
       "card_path": ".context-harness/cards/ctx-context-project.md",
       "chunk_path": "",
-      "content_sha256": "7b9b9307948f767c90882dfdebc5c07adee91325e2fdd56e6f1b0a541864ebc5",
+      "content_sha256": "3488449001f02491abe5b3eba7955009efde9003fb8de5854cbad3d4429bceb0",
       "key_facts": [
-        "agent-nexus is a centralized agent environment manager that deploys skills, hooks, and MCP servers to AI IDEs (Claude Code, Cursor, Google Antigravity, Codex..."
+        "agent-nexus is the safe package manager for serious agent workspaces: it installs MCP servers, skills, hooks, and GitHub agent packages across AI IDEs (Claud..."
       ]
     },
     {
@@ -56,7 +56,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 123,
       "tags": [
         "context",
@@ -86,7 +86,7 @@
       "scope": "project",
       "importance": 0.9,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 200,
       "tags": [
         "context",
@@ -119,7 +119,7 @@
       "scope": "project",
       "importance": 0.9,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 63,
       "tags": [
         "context",
@@ -148,7 +148,7 @@
       "scope": "project",
       "importance": 0.82,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 72,
       "tags": [
         "context",
@@ -177,7 +177,7 @@
       "scope": "project",
       "importance": 0.82,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 143,
       "tags": [
         "context",
@@ -209,7 +209,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 32,
       "tags": [
         "context",
@@ -235,7 +235,7 @@
       "scope": "project",
       "importance": 0.78,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 315,
       "tags": [
         "context",
@@ -267,7 +267,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 47,
       "tags": [
         "context",
@@ -291,7 +291,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 145,
       "tags": [
         "context",
@@ -321,7 +321,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 135,
       "tags": [
         "context",
@@ -348,7 +348,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 88,
       "tags": [
         "context",
@@ -378,7 +378,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 155,
       "tags": [
         "context",
@@ -409,7 +409,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 192,
       "tags": [
         "context",
@@ -440,7 +440,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 225,
       "tags": [
         "context",
@@ -474,7 +474,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 109,
       "tags": [
         "context",
@@ -504,7 +504,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 132,
       "tags": [
         "context",
@@ -533,7 +533,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-06",
+      "recency": "2026-07-07",
       "tokens_est": 450,
       "tags": [
         "context",
@@ -556,15 +556,15 @@
     {
       "id": "ctx-now-now",
       "title": "NOW.md: Now",
-      "summary": "Agent Nexus release changes are ready to push after public Context Harness deployment.",
+      "summary": "Agent Nexus competitive roadmap work is in progress. Phase 0 baseline is complete. Phase 1 public docs parity is in place. Phase 2 nexus audit read-only discovery is implemented and documented. Phase 3 MCP docs and go...",
       "source": "NOW.md#now",
       "source_path": "NOW.md",
       "kind": "resume",
       "scope": "task",
       "importance": 0.95,
       "confidence": "confirmed",
-      "recency": "2026-06-29",
-      "tokens_est": 257,
+      "recency": "2026-07-07",
+      "tokens_est": 460,
       "tags": [
         "now",
         "resume"
@@ -576,13 +576,13 @@
       ],
       "card_path": ".context-harness/cards/ctx-now-now.md",
       "chunk_path": "",
-      "content_sha256": "7bd818275416a33dc5e2a3152587b1857ec08b49445d9f0a9c764e1c2047e49e",
+      "content_sha256": "5335305d36eb0f14f4503a2b5926821884ca4f3989649d426f6dc01064667a3a",
       "key_facts": [
-        "Agent Nexus release changes are ready to push after public Context Harness deployment.",
-        "No release-blocking implementation or verification blockers remain for the local release candidate.",
-        "Push Agent Nexus release changes, then restart AI IDEs or agent hosts if updated skill metadata is not visible.",
-        "Last modified: 2026-06-29T15:47:49-0700",
-        "Files touched: README.md, docs/security-model.md, docs/demo-transcript.md, nexus.py, tests/testnexus.py, FINDINGS.md, CONTEXT.md, AGENTS.md, PLAN.md, NOW.md,..."
+        "Agent Nexus competitive roadmap work is in progress. Phase 0 baseline is complete. Phase 1 public docs parity is in place. Phase 2 nexus audit read-only disc...",
+        "No implementation blocker is known.",
+        "Competitive claims about AGHub/GAAL should be re-verified before publishing comparison copy externally.",
+        "Continue COMPETITIVEIMPROVEMENTPLAN.md with the next highest-value gap: CI/release quality from Phase 9, launch-ready story cleanup from Phase 10, or target...",
+        "Last modified: 2026-07-07"
       ]
     },
     {
@@ -595,7 +595,7 @@
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-06-29",
+      "recency": "2026-07-07",
       "tokens_est": 72,
       "tags": [
         "plan",
@@ -617,6 +617,38 @@
       ]
     },
     {
+      "id": "ctx-plan-competitive-improvement-focus",
+      "title": "PLAN.md: Competitive Improvement Focus",
+      "summary": "The current public positioning should be: Agent Nexus is the safe package",
+      "source": "PLAN.md#competitive-improvement-focus",
+      "source_path": "PLAN.md",
+      "kind": "plan",
+      "scope": "task",
+      "importance": 0.85,
+      "confidence": "confirmed",
+      "recency": "2026-07-07",
+      "tokens_est": 245,
+      "tags": [
+        "plan",
+        "competitive-improvement-focus"
+      ],
+      "read_when": [
+        "continuing the active task",
+        "checking done criteria or decisions",
+        "update context with task-local progress"
+      ],
+      "card_path": ".context-harness/cards/ctx-plan-competitive-improvement-focus.md",
+      "chunk_path": "",
+      "content_sha256": "cf34ccf9fb130057bdeceb5e3f069573af36e741ef550a4256458630471f8588",
+      "key_facts": [
+        "The current public positioning should be: Agent Nexus is the safe package",
+        "manager for serious agent workspaces. It installs MCP servers, skills, hooks,",
+        "and GitHub agent packages across Claude Code, Cursor, Google Antigravity, and",
+        "Codex from one personal manifest, with dry-run review, native config sync,",
+        "lockfile traceability, and doctor verification."
+      ]
+    },
+    {
       "id": "ctx-plan-current-findings",
       "title": "PLAN.md: Current Findings",
       "summary": "README and release copy now avoid stale negative competitor claims and position",
@@ -626,7 +658,7 @@
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-06-29",
+      "recency": "2026-07-07",
       "tokens_est": 296,
       "tags": [
         "plan",
@@ -658,7 +690,7 @@
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-06-29",
+      "recency": "2026-07-07",
       "tokens_est": 165,
       "tags": [
         "plan",
@@ -683,15 +715,15 @@
     {
       "id": "ctx-plan-progress",
       "title": "PLAN.md: Progress",
-      "summary": "[x] Added RELEASEGOAL.md for Agent Nexus release readiness.",
+      "summary": "[x] Completed competitive roadmap Phase 0 baseline: read required context/code/docs, captured CLI help, checked gitignored local-only files, and ran baseline verification.",
       "source": "PLAN.md#progress",
       "source_path": "PLAN.md",
       "kind": "plan",
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-06-29",
-      "tokens_est": 197,
+      "recency": "2026-07-07",
+      "tokens_est": 763,
       "tags": [
         "plan",
         "progress"
@@ -702,14 +734,14 @@
         "update context with task-local progress"
       ],
       "card_path": ".context-harness/cards/ctx-plan-progress.md",
-      "chunk_path": "",
-      "content_sha256": "33a46e3ab801cd6b1b5508390296cf705d5878fd89543376daa74e2634f07272",
+      "chunk_path": ".context-harness/chunks/ctx-plan-progress.md",
+      "content_sha256": "b68302f99b4a1444e6945e3c014cf31dae44d4e451f7fea9b9200fb73112913f",
       "key_facts": [
-        "[x] Added RELEASEGOAL.md for Agent Nexus release readiness.",
-        "[x] Replaced stale README competitor comparison with verified positioning and",
-        "a target/asset matrix.",
-        "[x] Added nexus init and troubleshooting.",
-        "[x] Added docs/security-model.md and docs/demo-transcript.md."
+        "[x] Completed competitive roadmap Phase 0 baseline: read required context/code/docs, captured CLI help, checked gitignored local-only files, and ran baseline...",
+        "[x] Added public docs for target/resource support, manifest fields, package behavior, and honest comparison positioning.",
+        "[x] Added copyable example manifests for minimal, Context Harness, MCP-only, team, and package-overlay setups.",
+        "[x] Linked the new docs and examples from README so the top-level public entry point points to deeper references.",
+        "[x] Added docs/package-trust.md to explain package sources, refs, pinning, discovery safety, executable surfaces, dry-run review, lockfile traceability, and..."
       ]
     },
     {
@@ -722,7 +754,7 @@
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-06-29",
+      "recency": "2026-07-07",
       "tokens_est": 100,
       "tags": [
         "plan",
@@ -747,15 +779,15 @@
     {
       "id": "ctx-plan-verification",
       "title": "PLAN.md: Verification",
-      "summary": "python3 -m pytest -q -p no:cacheprovider tests/testnexus.py exits 0 with",
+      "summary": "python -m pytest tests/testnexus.py -k installlocal exits 0 with 4 passed after install polish.",
       "source": "PLAN.md#verification",
       "source_path": "PLAN.md",
       "kind": "plan",
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-06-29",
-      "tokens_est": 284,
+      "recency": "2026-07-07",
+      "tokens_est": 966,
       "tags": [
         "plan",
         "verification"
@@ -766,14 +798,14 @@
         "update context with task-local progress"
       ],
       "card_path": ".context-harness/cards/ctx-plan-verification.md",
-      "chunk_path": "",
-      "content_sha256": "f37f10d2a6ab063b95c95856aa2414148e0fcf590a8ac43bf29fa9b912845aad",
+      "chunk_path": ".context-harness/chunks/ctx-plan-verification.md",
+      "content_sha256": "13ab4fad155df5bb550f432672661cf148fa46031e6ed8c618cfd2b46e988171",
       "key_facts": [
-        "python3 -m pytest -q -p no:cacheprovider tests/testnexus.py exits 0 with",
-        "33 passed.",
-        "python3 -c \"import pycompile; pycompile.compile('nexus.py', cfile='/tmp/agent-nexus-nexus.pyc', doraise=True)\"",
-        "exits 0.",
-        "python3 nexus.py doctor exits 0 against the current local deployment."
+        "python -m pytest tests/testnexus.py -k installlocal exits 0 with 4 passed after install polish.",
+        "python -m pytest tests exits 0 with 57 passed after install polish.",
+        "python -m pycompile nexus.py exits 0 after install polish.",
+        "Markdown fence validation exits 0 after install polish.",
+        "python -m pytest tests exits 0 with 53 passed after adding demo proof assets."
       ]
     },
     {
@@ -786,7 +818,7 @@
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-06-29",
+      "recency": "2026-07-07",
       "tokens_est": 157,
       "tags": [
         "plan",

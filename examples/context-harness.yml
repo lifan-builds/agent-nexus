@@ -1,0 +1,42 @@
+name: context-harness-everywhere
+version: 1.0.0
+
+targets:
+  - claude
+  - cursor
+  - antigravity
+  - codex
+
+packages:
+  - repo: lifan-builds/context-harness
+    ref: main
+    hooks:
+      - codex
+    skill_overrides:
+      context-init:
+        skill_frontmatter:
+          disable-model-invocation: true
+      set-goal:
+        skill_frontmatter:
+          disable-model-invocation: true
+
+mcps:
+  - name: sequential-thinking
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+
+  - name: playwright
+    command: npx
+    args: ["-y", "@playwright/mcp@latest"]
+
+  - name: context7
+    command: npx
+    args: ["-y", "@upstash/context7-mcp@latest"]
+
+optional_mcps:
+  - name: github-mcp
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-github"]
+    env:
+      GITHUB_TOKEN: "${GITHUB_TOKEN}"
+    description: GitHub API access

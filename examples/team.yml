@@ -1,0 +1,37 @@
+name: team-agent-stack
+version: 1.0.0
+
+targets:
+  - claude
+  - cursor
+  - codex
+
+packages:
+  - repo: lifan-builds/context-harness
+    ref: main
+    hooks:
+      - codex
+
+  - repo: obra/superpowers
+    ref: v5.0.4
+    targets: [claude, cursor]
+    skills:
+      - systematic-debugging
+      - verification-before-completion
+
+mcps:
+  - name: github
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-github"]
+    env:
+      GITHUB_TOKEN: "${GITHUB_TOKEN}"
+
+  - name: context7
+    command: npx
+    args: ["-y", "@upstash/context7-mcp@latest"]
+
+optional_mcps:
+  - name: playwright
+    command: npx
+    args: ["-y", "@playwright/mcp@latest"]
+    description: Browser automation for teams that need it

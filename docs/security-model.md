@@ -9,6 +9,7 @@ around review, merge preservation, and traceability.
 - `nexus.example.yml` when running `nexus init`
 - package contents fetched into `.nexus/cache/`
 - previous lockfile: `nexus.personal.lock.yml` or `nexus.lock.yml`
+- local package files for dashboard skill token-footprint estimates
 - existing target config files before merge:
   - `~/.claude/.mcp.json`
   - `~/.cursor/mcp.json`
@@ -18,7 +19,7 @@ around review, merge preservation, and traceability.
 
 ## Files Nexus Writes
 
-- `nexus.personal.yml` only when `nexus init` is run
+- `nexus.personal.yml` when `nexus init` is run or when the dashboard saves manifest edits
 - `.nexus/cache/` package snapshots
 - `.nexus/generated/<target>/skills/<skill>/` for metadata overlays
 - target skill symlinks:
@@ -50,8 +51,24 @@ MCP changes. `nexus sync --dry-run` prints the same review and exits before
 writing target IDE config or lockfiles. It may still populate `.nexus/cache/`
 while resolving packages for discovery.
 
-Hooks are executable too. Nexus only removes managed Codex hook commands marked
-with `--nexus-package`; unmanaged user hook commands are preserved.
+Hooks are executable too. `sync --dry-run` and interactive `sync` print hook commands before writing hook config. Nexus only removes managed Codex hook commands marked with `--nexus-package`; unmanaged user hook commands are preserved.
+
+## Dashboard Safety
+
+`nexus dashboard` starts a local management UI on `127.0.0.1` by default. Passive
+page load is read-only: it reads the manifest, lockfile, local package files, and
+target configs to build status and estimate token footprint.
+
+Dashboard writes are limited to explicit actions:
+
+- target-policy saves validate the selected target list and atomically replace the
+  manifest targets block,
+- deploy actions call the existing `sync --yes` path only after the UI sends the
+  exact confirmation string.
+
+The dashboard sanitizes MCP env and header values before returning state to the
+browser. It shows env/header key names only. Token and cost values are static
+estimates plus optional manifest metadata; they are not live provider billing.
 
 ## MCP Merge Rules
 
@@ -85,7 +102,7 @@ Nexus-managed commands are removed, and the final hook entries are deduplicated
 by content.
 
 This prevents repeated managed hook entries from accumulating across syncs while
-leaving user-owned hook commands alone.
+leaving user-owned hook commands alone. Read [hooks.md](hooks.md) for target-specific hook behavior.
 
 ## Lockfile Traceability
 
@@ -106,6 +123,7 @@ symlink can be traced back to a specific fetched package snapshot.
 Use this sequence on a new machine:
 
 ```bash
+python nexus.py audit
 python nexus.py init
 python nexus.py sync --dry-run
 python nexus.py sync

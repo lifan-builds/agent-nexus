@@ -24,6 +24,15 @@ packages:
     # Use hooks: false or hooks: [] to disable hooks from this package.
     hooks:
       - codex
+    skill_overrides:
+      context-init:
+        skill_frontmatter:
+          disable-model-invocation: true
+        # Optional dashboard-only cost metadata. Nexus does not track live billing.
+        # cost:
+        #   note: "Estimate only; actual cost depends on model/tool usage."
+        #   estimated_tokens_per_invocation: 3000
+        #   estimated_usd_per_1k_tokens: 0.003
 
   # Optional package example:
   # - repo: obra/superpowers
@@ -61,6 +70,11 @@ mcps:
   - name: context7
     command: npx
     args: ["-y", "@upstash/context7-mcp@latest"]
+    # Optional dashboard-only cost metadata. Nexus does not track live billing.
+    # cost:
+    #   note: "Estimate only; actual cost depends on model/tool usage."
+    #   estimated_tokens_per_call: 1500
+    #   estimated_usd_per_1k_tokens: 0.003
 
 # Optional MCPs (prompted interactively, or auto-included with --all)
 optional_mcps:

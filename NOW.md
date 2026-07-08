@@ -1,16 +1,16 @@
 # Now
 
 ## Current Focus
-Agent Nexus competitive roadmap work is in progress. Phase 0 baseline is complete. Phase 1 public docs parity is in place. Phase 2 `nexus audit` read-only discovery is implemented and documented. Phase 3 MCP docs and golden-style coverage are in place. Phase 4 trust docs cover package trust/lockfile traceability, and lockfile metadata now records richer package provenance. Phase 5 hook lifecycle hardening is documented and tested with hook command review output. Phase 6 demo/example assets are in place. Phase 7 clone-based install polish is complete with a safer reversible `scripts/install-local.sh` path.
+Agent Nexus competitive roadmap work is in progress. Broad target expansion is implemented: omitted manifest `targets` select the four core native adapters (`claude`, `cursor`, `antigravity`, `codex`), while `targets: ["*"]` expands to 41 skills target presets including Hermes, Qwen Code, Crush, OpenCode, Windsurf, and more. Docs/README distinguish broad skills support from tested MCP/hook writers.
 
 ## Active Blockers
 - No implementation blocker is known.
 - Competitive claims about AGHub/GAAL should be re-verified before publishing comparison copy externally.
 
 ## Immediate Next Step
-- Continue `COMPETITIVE_IMPROVEMENT_PLAN.md` with the next highest-value gap: CI/release quality from Phase 9, launch-ready story cleanup from Phase 10, or target expansion strategy only if supported by real adapter work.
+- Continue `COMPETITIVE_IMPROVEMENT_PLAN.md` with the next highest-value gap: remaining Phase 9 release quality (CI, temp-home audit, golden config fixtures, lightweight docs link checking, release checklist) or Phase 10 launch-ready story cleanup.
 
 ## Session State
-- Last modified: 2026-07-07
-- Files touched: `README.md`, `PLAN.md`, `NOW.md`, `COMPETITIVE_IMPROVEMENT_PLAN.md`, `docs/targets.md`, `docs/manifest.md`, `docs/packages.md`, `docs/package-trust.md`, `docs/mcp.md`, `docs/hooks.md`, `docs/comparison.md`, `docs/security-model.md`, `docs/demo-transcript.md`, `docs/demo-before-after.md`, `docs/demo-recording.md`, `docs/screenshot-checklist.md`, `examples/*.yml`, `scripts/install-local.sh`, `nexus.py`, `tests/test_nexus.py`.
-- Verification complete: tests, py_compile, audit JSON/text smoke checks, sync dry-run smoke checks, markdown fence validation, example YAML validation, lockfile metadata tests, MCP golden-style tests, hook lifecycle tests, demo docs checks, and installer safety tests passed after the latest updates.
+- Last modified: 2026-07-08T00:21:00.642Z
+- Files touched: `README.md`, `docs/manifest.md`, `docs/targets.md`, `COMPETITIVE_IMPROVEMENT_PLAN.md`, `nexus.py`, `tests/test_nexus.py`, `PLAN.md`, `NOW.md`, `CONTEXT.md`.
+- Verification complete: `python -m py_compile nexus.py`, `python -m pytest tests/test_nexus.py` (73 passed), temp-home core-default CLI smoke, and temp-home wildcard 41-target audit smoke.

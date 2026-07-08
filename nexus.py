@@ -30,26 +30,146 @@ NEXUS_VERSION = "0.2.0"
 # ---------------------------------------------------------------------------
 TARGET_REGISTRY = {
     "claude": {
+        "display": "Claude Code",
         "skills": Path.home() / ".claude" / "skills",
         "mcp": Path.home() / ".claude" / ".mcp.json",
         "mcp_format": "mcp_servers_json",
+        "default": True,
+        "status": {"skills": "implemented", "mcp": "implemented", "hooks": "implemented"},
     },
     "cursor": {
+        "display": "Cursor",
         "skills": Path.home() / ".cursor" / "skills",
         "mcp": Path.home() / ".cursor" / "mcp.json",
         "mcp_format": "mcp_servers_json",
+        "default": True,
+        "status": {"skills": "implemented", "mcp": "implemented", "hooks": "implemented"},
     },
     "antigravity": {
+        "display": "Google Antigravity",
         "skills": Path.home() / ".gemini" / "antigravity" / "skills",
         "mcp": Path.home() / ".gemini" / "antigravity" / "mcp_config.json",
         "mcp_format": "mcp_servers_json",
+        "default": True,
+        "status": {"skills": "implemented", "mcp": "implemented", "hooks": "unsupported"},
     },
     "codex": {
+        "display": "Codex",
         "skills": Path.home() / ".codex" / "skills",
         "mcp": Path.home() / ".codex" / "config.toml",
         "mcp_format": "codex_toml",
+        "default": True,
+        "status": {"skills": "implemented", "mcp": "implemented", "hooks": "implemented"},
     },
+    "adal": {"display": "AdaL", "skills": Path(".adal/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "amp": {"display": "Amp", "skills": Path.home() / ".config" / "agents" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "augment": {"display": "Augment", "skills": Path.home() / ".augment" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "cline": {"display": "Cline", "skills": Path.home() / ".agents" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "codebuddy": {"display": "CodeBuddy", "skills": Path(".codebuddy/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "command-code": {"display": "Command Code", "skills": Path(".commandcode/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "continue": {"display": "Continue", "skills": Path.home() / ".continue" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "crush": {"display": "Crush", "skills": Path(".crush/skills"), "mcp": Path.home() / ".config" / "crush" / "crush.json", "mcp_format": "mcp_servers_json", "status": {"skills": "implemented", "mcp": "planned", "hooks": "unsupported"}},
+    "droid": {"display": "Droid", "skills": Path(".factory/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "gemini-cli": {"display": "Gemini CLI", "skills": Path.home() / ".gemini" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "github-copilot": {"display": "GitHub Copilot", "skills": Path.home() / ".copilot" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "goose": {"display": "Goose", "skills": Path.home() / ".config" / "goose" / "skills", "mcp": Path.home() / ".config" / "goose" / "config.yaml", "mcp_format": "yaml_planned", "status": {"skills": "implemented", "mcp": "planned", "hooks": "unsupported"}},
+    "hermes": {"display": "Hermes Agent", "skills": Path.home() / ".hermes" / "skills", "mcp": Path.home() / ".hermes" / "config.yaml", "mcp_format": "yaml_planned", "status": {"skills": "implemented", "mcp": "planned", "hooks": "unsupported"}},
+    "iflow-cli": {"display": "iFlow CLI", "skills": Path(".iflow/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "junie": {"display": "Junie", "skills": Path.home() / ".junie" / "skills", "mcp": Path.home() / ".junie" / "mcp.json", "mcp_format": "mcp_servers_json", "status": {"skills": "implemented", "mcp": "planned", "hooks": "unsupported"}},
+    "kilo-code": {"display": "Kilo Code", "skills": Path(".kilocode/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "kimi-code": {"display": "Kimi Code CLI", "skills": Path(".agents/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "kiro-cli": {"display": "Kiro CLI", "skills": Path.home() / ".kiro" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "kode": {"display": "Kode", "skills": Path(".kode/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "mcpjam": {"display": "MCPJam", "skills": Path(".mcpjam/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "mistral-vibe": {"display": "Mistral Vibe", "skills": Path(".vibe/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "mux": {"display": "Mux", "skills": Path(".mux/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "neovate": {"display": "Neovate", "skills": Path(".neovate/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "openclaw": {"display": "OpenClaw", "skills": Path.home() / ".openclaw" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "opencode": {"display": "OpenCode", "skills": Path.home() / ".config" / "opencode" / "skills", "mcp": Path.home() / ".config" / "opencode" / "opencode.json", "mcp_format": "jsonc_planned", "status": {"skills": "implemented", "mcp": "planned", "hooks": "unsupported"}},
+    "openhands": {"display": "OpenHands", "skills": Path.home() / ".openhands" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "pi": {"display": "Pi", "skills": Path(".pi/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "pochi": {"display": "Pochi", "skills": Path(".pochi/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "qoder": {"display": "Qoder", "skills": Path(".qoder/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "qwen-code": {"display": "Qwen Code", "skills": Path(".qwen/skills"), "mcp": Path.home() / ".qwen" / "settings.json", "mcp_format": "mcp_servers_json", "status": {"skills": "implemented", "mcp": "planned", "hooks": "unsupported"}},
+    "replit": {"display": "Replit", "skills": Path.home() / ".config" / "agents" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "roo": {"display": "Roo Code", "skills": Path.home() / ".roo" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "trae": {"display": "Trae", "skills": Path.home() / ".trae" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "trae-cn": {"display": "Trae CN", "skills": Path(".trae/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "warp": {"display": "Warp", "skills": Path.home() / ".agents" / "skills", "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
+    "windsurf": {"display": "Windsurf", "skills": Path.home() / ".codeium" / "windsurf" / "skills", "mcp": Path.home() / ".codeium" / "windsurf" / "mcp_config.json", "mcp_format": "mcp_servers_json", "status": {"skills": "implemented", "mcp": "planned", "hooks": "unsupported"}},
+    "zencoder": {"display": "Zencoder", "skills": Path(".zencoder/skills"), "status": {"skills": "implemented", "mcp": "unsupported", "hooks": "unsupported"}},
 }
+
+CORE_DEFAULT_TARGETS = [name for name, entry in TARGET_REGISTRY.items() if entry.get("default")]
+
+TARGET_ALIASES = {
+    "claude-code": "claude",
+    "google-antigravity": "antigravity",
+    "gemini": "gemini-cli",
+    "gemini-antigravity": "antigravity",
+    "openai-codex": "codex",
+    "codex-cli": "codex",
+    "copilot": "github-copilot",
+    "github-copilot": "github-copilot",
+    "hermes-agent": "hermes",
+    "kilo": "kilo-code",
+    "kilocode": "kilo-code",
+    "kilo-code": "kilo-code",
+    "kiro": "kiro-cli",
+    "kiro-cli": "kiro-cli",
+    "kimi": "kimi-code",
+    "kimi-code": "kimi-code",
+    "mistral": "mistral-vibe",
+    "mistral-vibe": "mistral-vibe",
+    "openai": "codex",
+    "open-code": "opencode",
+    "roocode": "roo",
+    "roo-code": "roo",
+    "qwen": "qwen-code",
+    "qwen-cli": "qwen-code",
+    "qwen-code": "qwen-code",
+}
+
+
+def skill_target_names() -> list[str]:
+    return [name for name, entry in TARGET_REGISTRY.items() if entry.get("skills")]
+
+
+def _target_key(value: str) -> str:
+    return "-".join(value.strip().lower().replace("_", " ").split())
+
+
+def canonical_target_name(target: str) -> str:
+    raw = target.strip()
+    key = _target_key(raw)
+    if key in TARGET_ALIASES:
+        return TARGET_ALIASES[key]
+    if key in TARGET_REGISTRY:
+        return key
+    return raw
+
+
+def canonical_targets(value, default: list[str] | None = None) -> list[str]:
+    if value is None:
+        raw_targets = list(default or [])
+    elif value is False:
+        return []
+    elif isinstance(value, str):
+        raw_targets = [value]
+    else:
+        raw_targets = list(value or [])
+    targets = []
+    seen = set()
+    for target in raw_targets:
+        if not isinstance(target, str) or not target.strip():
+            continue
+        canonical = canonical_target_name(target)
+        expanded = skill_target_names() if canonical == "*" else [canonical]
+        for candidate in expanded:
+            if candidate not in seen:
+                seen.add(candidate)
+                targets.append(candidate)
+    return targets
 
 # Standard PATH for MCP env (restricted environments may lack it)
 STANDARD_PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -160,7 +280,7 @@ class Config:
 
     @property
     def targets(self) -> list[str]:
-        return self.data.get("targets", ["claude", "cursor", "antigravity"])
+        return canonical_targets(self.data.get("targets"), CORE_DEFAULT_TARGETS)
 
     @property
     def packages(self) -> list[dict]:
@@ -174,16 +294,30 @@ class Config:
     def optional_mcps(self) -> list[dict]:
         return self.data.get("optional_mcps", [])
 
+    def _target_path(self, target: str, key: str) -> Path | None:
+        entry = TARGET_REGISTRY.get(canonical_target_name(target))
+        if not entry:
+            return None
+        path = entry.get(key)
+        if not path:
+            return None
+        path = Path(path)
+        return path if path.is_absolute() else self.repo_dir / path
+
     def skill_path(self, target: str) -> Path | None:
-        entry = TARGET_REGISTRY.get(target)
-        return entry["skills"] if entry else None
+        return self._target_path(target, "skills")
 
     def mcp_path(self, target: str) -> Path | None:
-        entry = TARGET_REGISTRY.get(target)
-        return entry["mcp"] if entry else None
-
-    def mcp_format(self, target: str) -> str:
+        target = canonical_target_name(target)
         entry = TARGET_REGISTRY.get(target) or {}
+        if entry.get("status", {}).get("mcp") != "implemented":
+            return None
+        return self._target_path(target, "mcp")
+
+    def mcp_format(self, target: str) -> str | None:
+        entry = TARGET_REGISTRY.get(canonical_target_name(target)) or {}
+        if entry.get("status", {}).get("mcp") != "implemented":
+            return None
         return entry.get("mcp_format", "mcp_servers_json")
 
     def codex_hooks_path(self) -> Path:
@@ -407,26 +541,16 @@ def apply_package_filters(discovery: dict, pkg_spec: dict) -> dict:
 
 def package_targets(pkg: dict, default_targets: list[str]) -> list[str]:
     configured = pkg.get("targets")
+    defaults = canonical_targets(default_targets)
     if configured is None:
-        return list(default_targets)
-    if configured is False:
-        return []
-    if isinstance(configured, str):
-        requested = [configured]
-    else:
-        requested = list(configured or [])
-    default_set = set(default_targets)
+        return defaults
+    requested = canonical_targets(configured)
+    default_set = set(defaults)
     return [target for target in requested if target in default_set]
 
 
 def _configured_targets(value) -> list[str]:
-    if value is None:
-        return []
-    if value is False:
-        return []
-    if isinstance(value, str):
-        return [value]
-    return list(value or [])
+    return canonical_targets(value)
 
 
 def skill_override(pkg: dict, skill_name: str) -> dict:
@@ -1543,14 +1667,129 @@ def replace_manifest_targets_text(text: str, targets: list[str]) -> str:
 def update_manifest_targets(cfg: Config, targets: list[str]) -> dict:
     if not isinstance(targets, list) or not targets:
         raise ValueError("Select at least one target")
-    clean_targets = []
-    for target in targets:
-        if not isinstance(target, str) or not target.strip():
-            raise ValueError("Targets must be non-empty strings")
-        clean_targets.append(target.strip())
+    if any(not isinstance(target, str) or not target.strip() for target in targets):
+        raise ValueError("Targets must be non-empty strings")
+    clean_targets = canonical_targets(targets)
+    if not clean_targets:
+        raise ValueError("Select at least one target")
     text = load_manifest_text(cfg) if cfg.yml_path.exists() else ""
     write_manifest_atomically(cfg, replace_manifest_targets_text(text, clean_targets))
     return {"ok": True, "targets": clean_targets, "path": str(cfg.yml_path)}
+
+
+def _remove_path(mapping: dict, path: list[str]):
+    if not path or not isinstance(mapping, dict):
+        return
+    key = path[0]
+    if key not in mapping:
+        return
+    if len(path) == 1:
+        mapping.pop(key, None)
+        return
+    child = mapping.get(key)
+    if isinstance(child, dict):
+        _remove_path(child, path[1:])
+        if not child:
+            mapping.pop(key, None)
+
+
+def _ordered_skill_names(states: dict[str, dict], available_order: list[str]) -> list[str]:
+    ordered = [name for name in available_order if name in states]
+    ordered.extend(name for name in states if name not in ordered)
+    return ordered
+
+
+def _set_skill_manual_only(pkg: dict, skill_name: str, manual_only: bool):
+    overrides = pkg.setdefault("skill_overrides", {})
+    if not isinstance(overrides, dict):
+        overrides = {}
+        pkg["skill_overrides"] = overrides
+    override = overrides.setdefault(skill_name, {})
+    if not isinstance(override, dict):
+        override = {}
+        overrides[skill_name] = override
+    if manual_only:
+        override["skill_frontmatter"] = deep_merge(
+            override.get("skill_frontmatter", {}) if isinstance(override.get("skill_frontmatter"), dict) else {},
+            {"disable-model-invocation": True},
+        )
+        override["agents_openai"] = deep_merge(
+            override.get("agents_openai", {}) if isinstance(override.get("agents_openai"), dict) else {},
+            {"policy": {"allow_implicit_invocation": False}},
+        )
+        return
+    _remove_path(override, ["skill_frontmatter", "disable-model-invocation"])
+    _remove_path(override, ["agents_openai", "policy", "allow_implicit_invocation"])
+    if not override:
+        overrides.pop(skill_name, None)
+    if not overrides:
+        pkg.pop("skill_overrides", None)
+
+
+def update_manifest_package_skill_policy(cfg: Config, payload: dict) -> dict:
+    try:
+        import yaml
+    except ImportError:
+        raise ValueError("PyYAML is required to write the manifest")
+    if not isinstance(payload, dict):
+        raise ValueError("Expected structured skill policy data")
+    package_index = payload.get("package_index")
+    if not isinstance(package_index, int):
+        raise ValueError("package_index must be an integer")
+    skills_payload = payload.get("skills")
+    if not isinstance(skills_payload, list):
+        raise ValueError("skills must be a list")
+    original_text = load_manifest_text(cfg)
+    manifest = parse_manifest_text(original_text)
+    packages = manifest.get("packages", [])
+    if not isinstance(packages, list) or package_index < 0 or package_index >= len(packages):
+        raise ValueError("Unknown package")
+    pkg = packages[package_index]
+    if not isinstance(pkg, dict):
+        raise ValueError("Package entry must be a mapping")
+    package_name = _manifest_package_name(pkg)
+    if payload.get("package") != package_name:
+        raise ValueError("Package name does not match package_index")
+
+    lock = cfg.load_lockfile() or {}
+    lock_packages = lock.get("packages", []) if isinstance(lock.get("packages", []), list) else []
+    lock_by_name = {entry.get("name"): entry for entry in lock_packages if isinstance(entry, dict)}
+    available = build_package_skill_inventory(cfg, pkg, lock_by_name.get(package_name, {}), package_index)
+    available_order = [skill["name"] for skill in available["skill_inventory"]]
+    known = set(available_order)
+    states = {}
+    for item in skills_payload:
+        if not isinstance(item, dict):
+            raise ValueError("Skill policy rows must be mappings")
+        name = item.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("Skill name is required")
+        if name not in known:
+            raise ValueError(f"Unknown skill: {name}")
+        if not isinstance(item.get("enabled"), bool) or not isinstance(item.get("manual_only"), bool):
+            raise ValueError("enabled and manual_only must be booleans")
+        states[name] = {"enabled": item["enabled"], "manual_only": item["manual_only"]}
+    if set(states) != known:
+        missing = sorted(known - set(states))
+        raise ValueError(f"Missing skill policy rows: {', '.join(missing)}")
+
+    enabled = [name for name in _ordered_skill_names(states, available_order) if states[name]["enabled"]]
+    if len(enabled) == len(available_order):
+        pkg.pop("skills", None)
+    else:
+        pkg["skills"] = enabled
+    for name in _ordered_skill_names(states, available_order):
+        _set_skill_manual_only(pkg, name, states[name]["manual_only"])
+
+    text = yaml.dump(manifest, default_flow_style=False, sort_keys=False)
+    write_manifest_atomically(cfg, text)
+    return {
+        "ok": True,
+        "package": package_name,
+        "enabled_skills": enabled,
+        "manual_only_skills": [name for name in _ordered_skill_names(states, available_order) if states[name]["manual_only"]],
+        "path": str(cfg.yml_path),
+    }
 
 
 def find_skill_markdown(pkg_path: Path, skill_name: str) -> Path | None:
@@ -1616,7 +1855,10 @@ def inspect_mcp_config(cfg: Config, target: str, managed_names: set[str]) -> dic
         "status": "missing",
         "error": None,
     }
-    if not mcp_path or not mcp_path.exists():
+    if not mcp_path:
+        result["status"] = "unsupported"
+        return result
+    if not mcp_path.exists():
         return result
     servers, error = _read_mcp_servers(cfg, target, mcp_path)
     if error:
@@ -1660,7 +1902,7 @@ def _inspect_json_hooks(path: Path) -> dict:
 def _safe_targets(cfg: Config) -> list[str]:
     if cfg.yml_path.exists():
         return cfg.targets
-    return list(TARGET_REGISTRY)
+    return list(CORE_DEFAULT_TARGETS)
 
 
 def _redact_home_path(path: str | None, redact_home: bool) -> str | None:
@@ -1677,14 +1919,10 @@ def _redact_home_path(path: str | None, redact_home: bool) -> str | None:
 
 
 def _target_skill_path_for_audit(cfg: Config, target: str) -> Path | None:
-    if not cfg.yml_path.exists() and target in TARGET_REGISTRY:
-        return TARGET_REGISTRY[target]["skills"]
     return cfg.skill_path(target)
 
 
 def _target_mcp_path_for_audit(cfg: Config, target: str) -> Path | None:
-    if not cfg.yml_path.exists() and target in TARGET_REGISTRY:
-        return TARGET_REGISTRY[target]["mcp"]
     return cfg.mcp_path(target)
 
 
@@ -1750,7 +1988,10 @@ def _audit_mcp_config(cfg: Config, target: str, lock_managed_names: set[str]) ->
         "unmanaged": [],
         "error": None,
     }
-    if not cfg.yml_path.exists() or not mcp_path or not mcp_path.exists():
+    if not mcp_path:
+        result["status"] = "unsupported"
+        return result
+    if not cfg.yml_path.exists() or not mcp_path.exists():
         return result
 
     managed_names = set(lock_managed_names)
@@ -1957,7 +2198,7 @@ def _print_audit_text(model: dict):
 
 
 def cmd_audit(cfg: Config, args):
-    targets = [args.target] if getattr(args, "target", None) else None
+    targets = canonical_targets([args.target]) if getattr(args, "target", None) else None
     model = build_audit_model(cfg, targets, getattr(args, "redact_home", False))
     if getattr(args, "json", False):
         print(json.dumps(model, indent=2, sort_keys=False))
@@ -1992,16 +2233,138 @@ def _package_cost_metadata(manifest_packages: list[dict], pkg_name: str, skill_n
     return skill_override.get("cost", {}) if isinstance(skill_override.get("cost"), dict) else {}
 
 
-def _skill_implicit_invocation_enabled(manifest_packages: list[dict], pkg_name: str, skill_name: str) -> bool:
-    skill_override = _skill_override(manifest_packages, pkg_name, skill_name)
-    frontmatter = skill_override.get("skill_frontmatter") if isinstance(skill_override, dict) else None
+def package_skill_manual_only(pkg: dict, skill_name: str) -> bool:
+    override = skill_override(pkg, skill_name)
+    frontmatter = override.get("skill_frontmatter") if isinstance(override, dict) else None
     if isinstance(frontmatter, dict) and frontmatter.get("disable-model-invocation") is True:
-        return False
-    agents_openai = skill_override.get("agents_openai") if isinstance(skill_override, dict) else None
+        return True
+    agents_openai = override.get("agents_openai") if isinstance(override, dict) else None
     policy = agents_openai.get("policy") if isinstance(agents_openai, dict) else None
-    if isinstance(policy, dict) and policy.get("allow_implicit_invocation") is False:
+    return isinstance(policy, dict) and policy.get("allow_implicit_invocation") is False
+
+
+def package_skill_enabled(pkg: dict, skill_name: str) -> bool:
+    configured = pkg.get("skills")
+    if configured is None:
+        return True
+    if not isinstance(configured, list):
         return False
+    return skill_name in configured
+
+
+def _skill_implicit_invocation_enabled(manifest_packages: list[dict], pkg_name: str, skill_name: str) -> bool:
+    for pkg in manifest_packages:
+        if _manifest_package_name(pkg) == pkg_name:
+            return not package_skill_manual_only(pkg, skill_name)
     return True
+
+
+def _lock_package_source_path(lock_entry: dict) -> str | None:
+    source = lock_entry.get("source") if isinstance(lock_entry.get("source"), dict) else {}
+    for key in ["cache_path", "path"]:
+        value = source.get(key)
+        if value:
+            return str(value)
+    value = lock_entry.get("path")
+    return str(value) if value else None
+
+
+def dashboard_package_source_path(cfg: Config, pkg_spec: dict | None, lock_entry: dict | None) -> Path | None:
+    lock_entry = lock_entry or {}
+    value = _lock_package_source_path(lock_entry)
+    if value:
+        candidate = Path(str(value)).expanduser()
+        if candidate.exists():
+            return candidate
+    if isinstance(pkg_spec, dict) and pkg_spec.get("path"):
+        candidate = Path(str(pkg_spec["path"])).expanduser()
+        if not candidate.is_absolute():
+            candidate = cfg.repo_dir / candidate
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _skill_names_from_fallbacks(pkg_spec: dict | None, lock_entry: dict | None) -> list[str]:
+    names = []
+    lock_entry = lock_entry or {}
+    for name in lock_entry.get("discovered", {}).get("skills", []) or []:
+        if isinstance(name, str) and name not in names:
+            names.append(name)
+    if isinstance(pkg_spec, dict):
+        for name in pkg_spec.get("skills", []) or []:
+            if isinstance(name, str) and name not in names:
+                names.append(name)
+        overrides = pkg_spec.get("skill_overrides", {}) if isinstance(pkg_spec.get("skill_overrides"), dict) else {}
+        for name in overrides:
+            if isinstance(name, str) and name not in names:
+                names.append(name)
+    return names
+
+
+def discover_dashboard_package_skills(cfg: Config, pkg_spec: dict | None, lock_entry: dict | None) -> list[dict]:
+    pkg_name = _manifest_package_name(pkg_spec or lock_entry or {})
+    source_path = dashboard_package_source_path(cfg, pkg_spec, lock_entry)
+    if source_path:
+        discovered = PackageManager.discover(
+            source_path,
+            pkg_name,
+            pkg_spec.get("sparse_paths") if isinstance(pkg_spec, dict) else None,
+        )
+        return [
+            {"name": skill["name"], "path": skill.get("path"), "source": "local"}
+            for skill in discovered.get("skills", [])
+            if isinstance(skill.get("name"), str)
+        ]
+    return [{"name": name, "path": None, "source": "manifest/lockfile"} for name in _skill_names_from_fallbacks(pkg_spec, lock_entry)]
+
+
+def build_package_skill_inventory(cfg: Config, pkg_spec: dict | None, lock_entry: dict | None, index: int | None) -> dict:
+    pkg_spec = pkg_spec or {}
+    lock_entry = lock_entry or {}
+    deployed_skills = set(lock_entry.get("discovered", {}).get("skills", []) or [])
+    deployed_to = lock_entry.get("deployed_to", []) or []
+    skills = []
+    for skill in discover_dashboard_package_skills(cfg, pkg_spec, lock_entry):
+        name = skill["name"]
+        skill_file = Path(skill["path"]) / "SKILL.md" if skill.get("path") else None
+        static_tokens = 0
+        token_source = "unknown"
+        if skill_file and skill_file.is_file():
+            try:
+                static_tokens = estimate_tokens(skill_file.read_text(encoding="utf-8"))
+                token_source = str(skill_file)
+            except OSError:
+                pass
+        enabled = package_skill_enabled(pkg_spec, name) if pkg_spec else name in deployed_skills
+        manual_only = package_skill_manual_only(pkg_spec, name) if pkg_spec else False
+        skills.append({
+            "name": name,
+            "enabled": enabled,
+            "manual_only": manual_only,
+            "implicit_invocation": enabled and not manual_only,
+            "deployed": name in deployed_skills,
+            "deployed_to": deployed_to if name in deployed_skills else [],
+            "static_tokens": static_tokens,
+            "token_source": token_source,
+            "source": skill.get("source", "unknown"),
+        })
+    enabled_count = sum(1 for skill in skills if skill["enabled"])
+    manual_count = sum(1 for skill in skills if skill["manual_only"])
+    mode = "all" if pkg_spec.get("skills") is None else "allowlist"
+    return {
+        "index": index,
+        "skill_policy": {
+            "mode": mode,
+            "auto_enable_new_skills": mode == "all",
+            "enabled_count": enabled_count,
+            "available_count": len(skills),
+            "disabled_count": len(skills) - enabled_count,
+            "manual_only_count": manual_count,
+            "editable": index is not None,
+        },
+        "skill_inventory": skills,
+    }
 
 
 def _cost_estimate(cost: dict) -> dict:
@@ -2031,8 +2394,8 @@ def build_dashboard_model(cfg: Config) -> dict:
         skill_status = inspect_skill_links(cfg, target)
         mcp_status = inspect_mcp_config(cfg, target, managed_names)
         target_hook = hook_status.get(target)
-        states = [skill_status["status"], mcp_status["status"]]
-        if target_hook:
+        states = [state for state in [skill_status["status"], mcp_status["status"]] if state != "unsupported"]
+        if target_hook and target_hook["status"] != "unsupported":
             states.append(target_hook["status"])
         if "invalid" in states:
             overall = "invalid"
@@ -2058,11 +2421,14 @@ def build_dashboard_model(cfg: Config) -> dict:
 
     packages = []
     lock_by_name = {pkg.get("name"): pkg for pkg in lock_packages if isinstance(pkg, dict)}
-    for pkg in data.get("packages", []) or []:
+    for index, pkg in enumerate(data.get("packages", []) or []):
         if not isinstance(pkg, dict):
             continue
         name = _manifest_package_name(pkg)
+        lock_entry = lock_by_name.get(name, {})
+        skill_inventory = build_package_skill_inventory(cfg, pkg, lock_entry, index)
         packages.append({
+            "index": index,
             "name": name,
             "repo": pkg.get("repo"),
             "path": pkg.get("path"),
@@ -2071,13 +2437,17 @@ def build_dashboard_model(cfg: Config) -> dict:
             "skills": pkg.get("skills"),
             "hooks": pkg.get("hooks"),
             "sparse_paths": pkg.get("sparse_paths", []),
-            "discovered": lock_by_name.get(name, {}).get("discovered", {}),
-            "deployed_to": lock_by_name.get(name, {}).get("deployed_to", []),
-            "overlays": lock_by_name.get(name, {}).get("overlays", []),
+            "discovered": lock_entry.get("discovered", {}),
+            "deployed_to": lock_entry.get("deployed_to", []),
+            "overlays": lock_entry.get("overlays", []),
+            **skill_inventory,
         })
+    manifest_package_names = {p["name"] for p in packages}
     for pkg in lock_packages:
-        if pkg.get("name") not in {p["name"] for p in packages}:
+        if pkg.get("name") not in manifest_package_names:
+            skill_inventory = build_package_skill_inventory(cfg, None, pkg, None)
             packages.append({
+                "index": None,
                 "name": pkg.get("name"),
                 "repo": None,
                 "path": pkg.get("path"),
@@ -2089,7 +2459,11 @@ def build_dashboard_model(cfg: Config) -> dict:
                 "discovered": pkg.get("discovered", {}),
                 "deployed_to": pkg.get("deployed_to", []),
                 "overlays": pkg.get("overlays", []),
+                **skill_inventory,
             })
+    available_package_skills = sum(pkg.get("skill_policy", {}).get("available_count", 0) for pkg in packages)
+    disabled_package_skills = sum(pkg.get("skill_policy", {}).get("disabled_count", 0) for pkg in packages)
+    manual_only_package_skills = sum(pkg.get("skill_policy", {}).get("manual_only_count", 0) for pkg in packages)
 
     skills = []
     total_skill_tokens = 0
@@ -2191,11 +2565,14 @@ def build_dashboard_model(cfg: Config) -> dict:
             "skill_static_tokens": implicit_skill_tokens,
             "all_skill_static_tokens": total_skill_tokens,
             "mcp_static_tokens": total_mcp_tokens,
+            "available_package_skills": available_package_skills,
+            "disabled_package_skills": disabled_package_skills,
+            "manual_only_package_skills": manual_only_package_skills,
         },
         "deployment": {
             "global_targets": cfg.targets,
-            "available_targets": sorted(set(TARGET_REGISTRY.keys()) | set(cfg.targets)),
-            "default_to_all": True,
+            "available_targets": list(dict.fromkeys([*TARGET_REGISTRY.keys(), *cfg.targets])),
+            "default_to_all": cfg.targets == skill_target_names(),
         },
         "manifest": sanitize_manifest(data),
         "packages": packages,
@@ -2270,130 +2647,167 @@ def render_dashboard_html() -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent Nexus Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23071018'/%3E%3Cpath d='M32 9 49 17v13c0 11-7 20-17 25-10-5-17-14-17-25V17l17-8Z' fill='none' stroke='%2331d0aa' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M22 33h20M32 23v20' stroke='%2365a7ff' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
 :root {
   color-scheme: dark;
   --bg: #071018;
-  --panel: #0d1824;
-  --panel-2: #111f2d;
-  --ink: #eef7ff;
-  --muted: #95a9bb;
-  --line: #203246;
+  --panel: #0b1520;
+  --panel-soft: #101c29;
+  --panel-subtle: #0e1924;
+  --border: #223446;
+  --border-soft: #172838;
+  --text: #eef7ff;
+  --text-soft: #c4d3e2;
+  --text-muted: #94a7b8;
   --accent: #31d0aa;
-  --accent-2: #65a7ff;
+  --accent-quiet: rgba(49, 208, 170, .12);
+  --blue: #65a7ff;
   --good: #68e39b;
   --warn: #ffd166;
   --bad: #ff7a6f;
   --code: #e8f2ff;
 }
 * { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
   margin: 0;
   min-height: 100dvh;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background:
-    radial-gradient(circle at 8% 0%, rgba(49, 208, 170, .24), transparent 28rem),
-    radial-gradient(circle at 82% 12%, rgba(101, 167, 255, .20), transparent 26rem),
-    linear-gradient(180deg, #071018 0%, #09131d 55%, #071018 100%);
-  color: var(--ink);
+  background: var(--bg);
+  color: var(--text);
 }
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,.75), transparent 72%);
-}
-button, textarea, pre { font: inherit; }
-.shell { width: min(1480px, calc(100vw - 32px)); margin: 0 auto; }
-header { padding: 32px 0 10px; position: relative; }
-.topline { display:flex; align-items:center; justify-content:space-between; gap: 16px; flex-wrap: wrap; }
-h1 { margin: 0; font-size: 38px; line-height: 1.05; letter-spacing: -0.035em; text-wrap: balance; }
-.kicker { color: var(--accent); font-size: 13px; font-weight: 800; margin-bottom: 8px; }
-.subtle { color: var(--muted); }
-.pathline { margin-top: 12px; color: var(--muted); font-size: 13px; word-break: break-all; }
-.toolbar { display:flex; flex-wrap:wrap; gap:10px; }
+button, textarea, pre, input { font: inherit; }
+.shell { width: min(1180px, calc(100vw - 32px)); margin: 0 auto; }
+header { padding: 24px 0 12px; border-bottom: 1px solid var(--border-soft); }
+.topbar { display:flex; justify-content:space-between; align-items:flex-start; gap: 24px; }
+.brand { display:flex; align-items:flex-start; gap: 13px; min-width: 0; }
+.mark { flex:0 0 auto; width: 36px; height: 36px; border-radius: 10px; display:grid; place-items:center; background: var(--accent-quiet); border:1px solid rgba(49,208,170,.28); color: var(--accent); }
+.mark svg { width: 23px; height: 23px; }
+h1 { margin: 0; font-size: 24px; line-height: 1.15; letter-spacing: -.025em; text-wrap: balance; }
+.lede { max-width: 720px; margin: 6px 0 0; color: var(--text-soft); font-size: 14px; line-height: 1.55; text-wrap: pretty; }
+.pathline { margin-top: 9px; color: var(--text-muted); font-size: 12px; word-break: break-word; }
+.toolbar { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
 button {
-  border: 1px solid var(--line);
-  background: #101d2a;
-  color: var(--ink);
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-weight: 760;
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-weight: 720;
   cursor: pointer;
-  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+  transition: background .16s ease, border-color .16s ease, transform .16s ease;
 }
-button:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent), var(--line) 45%); }
+button:hover { background:#142232; border-color:#35506a; }
 button:active { transform: translateY(1px); }
-button.primary { background: var(--accent); border-color: var(--accent); color: #03100d; }
-button.danger { border-color: color-mix(in srgb, var(--bad), var(--line) 35%); color: #ffd9d5; background: rgba(255, 122, 111, .09); }
-button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 3px solid rgba(49, 208, 170, .38); outline-offset: 2px; }
-main { padding: 18px 0 48px; position: relative; }
-.grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(172px, 1fr)); gap: 10px; margin: 22px 0; }
-.card, section, .tabs {
-  background: color-mix(in srgb, var(--panel), transparent 6%);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-}
-.card { padding: 16px; position: relative; overflow: hidden; }
-.card::after { content:""; position:absolute; inset:auto 12px 0; height:2px; background: linear-gradient(90deg, var(--accent), transparent); opacity:.65; }
-.card .value { font-size: 30px; font-weight: 850; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-.card .label { color: var(--muted); font-size: 12px; margin-top: 5px; }
-.tabs { display:flex; gap: 6px; flex-wrap:wrap; margin: 20px 0 12px; padding: 6px; position: sticky; top: 8px; z-index: 2; }
-.tab { border-radius: 10px; padding: 9px 12px; background: transparent; }
-.tab.active { background: var(--accent); border-color: var(--accent); color: #03100d; }
-section { display:none; padding: 18px; margin-top: 12px; }
+button.primary { background: var(--accent); border-color: transparent; color: #03100d; }
+button.primary:hover { background:#48dec0; }
+button.danger { border-color: rgba(255,122,111,.44); color:#ffd9d5; background: rgba(255,122,111,.10); }
+button:focus-visible, textarea:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid rgba(49, 208, 170, .42); outline-offset: 2px; }
+.safety-row { display:flex; flex-wrap:wrap; gap: 14px; margin-top: 14px; color: var(--text-muted); font-size: 12px; }
+.safety-chip { display:inline-flex; align-items:center; gap:7px; }
+.safety-chip::before { content:""; width:6px; height:6px; border-radius:999px; background: var(--accent); }
+main { padding: 18px 0 44px; }
+.summary-strip { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; overflow:hidden; border:1px solid var(--border); border-radius: 14px; background: var(--border); }
+.metric { background: var(--panel); padding: 14px; min-height: 88px; }
+.metric .value { font-size: 26px; font-weight: 850; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.metric .label { margin-top: 4px; color: var(--text-soft); font-size: 13px; font-weight: 760; }
+.metric .detail { margin-top: 4px; color: var(--text-muted); font-size: 12px; line-height: 1.4; }
+.metric.warn .value { color: var(--warn); }
+.metric.good .value { color: var(--good); }
+.tabs { display:flex; gap: 4px; margin: 16px 0 10px; border-bottom:1px solid var(--border-soft); }
+.tab { border:0; border-bottom: 2px solid transparent; border-radius: 0; padding: 10px 12px; background: transparent; color: var(--text-muted); }
+.tab strong { font-size: 14px; font-weight: 760; }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); background: transparent; }
+section { display:none; padding-top: 12px; }
 section.active { display:block; }
-.section-head { display:flex; align-items:flex-end; justify-content:space-between; gap: 16px; margin-bottom: 16px; }
-h2 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+.section-head { display:flex; align-items:flex-end; justify-content:space-between; gap: 16px; margin: 0 0 14px; }
+h2 { margin: 0; font-size: 20px; letter-spacing: -.02em; }
 h3 { margin: 22px 0 10px; font-size: 15px; }
-.table-wrap { overflow:auto; border: 1px solid var(--line); border-radius: 14px; background: rgba(5, 13, 20, .36); }
-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 760px; }
-th, td { text-align:left; padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,.07); vertical-align: top; }
-th { color: #b7c7d5; font-size: 11px; letter-spacing: .05em; font-weight: 850; }
+.helper { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+.panel { border:1px solid var(--border); border-radius: 14px; background: var(--panel); padding: 14px; }
+.table-wrap { overflow:auto; border: 1px solid var(--border-soft); border-radius: 12px; background: #08121c; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 680px; }
+th, td { text-align:left; padding: 11px 10px; border-bottom: 1px solid rgba(255,255,255,.065); vertical-align: middle; }
+th { color: var(--text-muted); font-size: 11px; font-weight: 780; }
 tr:last-child td { border-bottom: 0; }
-.name-cell { font-weight: 800; color: #f7fbff; }
+.name-cell { font-weight: 780; color: #f7fbff; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
-.pill { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:5px 9px; border:1px solid var(--line); font-size:12px; font-weight:800; white-space: nowrap; }
-.healthy { color: var(--good); } .warning { color: var(--warn); } .invalid, .missing { color: var(--bad); }
-.token-bar { width: 110px; height: 7px; background: #152334; border-radius: 999px; overflow:hidden; display:inline-block; vertical-align:middle; margin-left: 8px; }
-.token-bar > span { display:block; height:100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius:inherit; }
+.pill { display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:4px 8px; border:1px solid var(--border); font-size:12px; font-weight:760; white-space: nowrap; background: rgba(255,255,255,.03); }
+.pill::before { content:""; width:6px; height:6px; border-radius:999px; background: currentColor; }
+.healthy { color: var(--good); } .warning { color: var(--warn); } .invalid, .missing { color: var(--bad); } .unknown { color: var(--text-muted); }
+.token-meter { display:inline-flex; align-items:center; gap:6px; color: var(--text-soft); }
+.token-bar { display:none; }
 .target-grid { display:flex; flex-wrap:wrap; gap: 8px; margin: 12px 0; }
-.target-chip { display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line); border-radius:999px; background:#0a1521; color:var(--ink); font-weight:750; }
-.target-chip input { accent-color: var(--accent); }
-textarea { width:100%; min-height: 420px; resize: vertical; border:1px solid var(--line); border-radius:14px; padding:14px; background: #06111b; color: var(--code); font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-pre { overflow:auto; white-space:pre-wrap; background:#06111b; padding:14px; border-radius:14px; border:1px solid var(--line); color: var(--code); }
-.notice { padding: 12px 14px; background: rgba(49, 208, 170, .10); border:1px solid rgba(49, 208, 170, .26); border-radius: 14px; margin-bottom: 14px; color:#dffbf5; }
+.target-chip { display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--border); border-radius:999px; background: var(--panel-subtle); color:var(--text); font-weight:720; }
+.target-chip input, .skill-policy-table input { accent-color: var(--accent); }
+details { border:1px solid var(--border); border-radius: 14px; background: var(--panel); }
+details + details { margin-top: 10px; }
+summary { cursor:pointer; list-style:none; padding: 13px 14px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+summary::-webkit-details-marker { display:none; }
+summary::after { content:"Open"; color: var(--text-muted); font-size:12px; }
+details[open] > summary { border-bottom:1px solid var(--border-soft); }
+details[open] > summary::after { content:"Close"; }
+.disclosure-body { padding: 14px; }
+.skill-control-panel { margin: 10px 0; }
+.skill-control-title { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.skill-control-title h4 { margin:0; font-size:15px; }
+.skill-policy-table table { min-width: 720px; }
+.inline-check { display:inline-flex; align-items:center; gap:7px; font-weight:720; }
+.source-badge { display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px 7px; color:var(--text-muted); font-size:11px; font-weight:720; }
+textarea { width:100%; min-height: 420px; resize: vertical; border:1px solid var(--border); border-radius:12px; padding:14px; background: #06111b; color: var(--code); font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+pre { overflow:auto; white-space:pre-wrap; background:#06111b; padding:12px; border-radius:10px; border:1px solid var(--border-soft); color: var(--code); font-size:12px; }
+.notice { padding: 11px 13px; background: rgba(49, 208, 170, .08); border:1px solid rgba(49, 208, 170, .22); border-radius: 12px; margin-bottom: 12px; color:#dffbf5; font-size:13px; line-height:1.45; }
+.notice.warn { background: rgba(255, 209, 102, .09); border-color: rgba(255, 209, 102, .26); color: #fff1ca; }
+.empty-state { padding: 14px; border:1px dashed var(--border); border-radius: 12px; color: var(--text-muted); background: rgba(255,255,255,.025); }
 .row-actions { display:flex; flex-wrap:wrap; gap:10px; margin: 12px 0; }
 .small { font-size: 12px; }
-.split { display:grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px; }
-.side-panel { border:1px solid var(--line); border-radius:14px; padding:14px; background:#081522; }
-@media (max-width: 900px) { .split { grid-template-columns: 1fr; } table { min-width: 680px; } h1 { font-size: 31px; } }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.workflow-list { display:grid; gap: 8px; grid-template-columns: repeat(5, minmax(120px, 1fr)); }
+.workflow-list div { padding:10px; border:1px solid var(--border-soft); border-radius:10px; background:#08121c; }
+.workflow-list strong { display:block; margin-bottom:4px; }
+@media (max-width: 900px) { .topbar { flex-direction:column; } .toolbar { justify-content:flex-start; } .summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } .workflow-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .shell { width: min(100% - 20px, 1180px); } header { padding-top: 16px; } .brand { flex-direction:column; } .summary-strip, .workflow-list { grid-template-columns: 1fr; } .tabs { overflow:auto; } .section-head { align-items:flex-start; flex-direction:column; } summary { align-items:flex-start; flex-direction:column; } table { min-width: 620px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
 <body>
-<header class="shell">
-  <div class="topline">
-    <div>
-      <div class="kicker">Local agent control plane</div>
-      <h1>Agent Nexus Dashboard</h1>
-      <div class="pathline" id="paths">Loading local Nexus state...</div>
+<header>
+  <div class="shell topbar">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><path d="M32 9 49 17v13c0 11-7 20-17 25-10-5-17-14-17-25V17l17-8Z" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M22 33h20M32 23v20" stroke="#65a7ff" stroke-width="5" stroke-linecap="round"/></svg></div>
+      <div>
+        <h1>Agent Nexus Dashboard</h1>
+        <p class="lede">Manage package skills, targets, and local platform health from one review-first workspace.</p>
+        <div class="pathline" id="paths">Loading local Nexus state...</div>
+        <div class="safety-row" aria-label="Dashboard safety properties">
+          <span class="safety-chip">localhost only</span>
+          <span class="safety-chip">redacted secrets</span>
+          <span class="safety-chip">confirmed deploys</span>
+        </div>
+      </div>
     </div>
     <div class="toolbar">
-      <button class="primary" id="refreshBtn">Refresh</button>
-      <button class="danger" id="deployBtn">Deploy</button>
+      <button id="refreshBtn">Refresh state</button>
+      <button class="danger" id="deployBtn" data-endpoint="/api/sync/deploy">Deploy</button>
     </div>
   </div>
 </header>
 <main class="shell">
-  <div class="grid" id="summary"></div>
-  <div class="tabs">
-    <button class="tab active" data-tab="inventory">Inventory</button>
-    <button class="tab" data-tab="manage">Target policy</button>
-    <button class="tab" data-tab="status">Platforms</button>
+  <div class="summary-strip" id="summary"></div>
+  <details style="margin-top:12px">
+    <summary><span><strong>Workflow</strong><span class="helper"> Audit, dry run, deploy, doctor, lockfile</span></span></summary>
+    <div class="disclosure-body workflow-list" aria-label="Agent Nexus workflow">
+      <div><strong>Audit</strong><span class="helper">Read local state first.</span></div>
+      <div><strong>Dry run</strong><span class="helper">Preview executable changes.</span></div>
+      <div><strong>Deploy</strong><span class="helper">Sync after confirmation.</span></div>
+      <div><strong>Doctor</strong><span class="helper">Verify target health.</span></div>
+      <div><strong>Lockfile</strong><span class="helper">Trace deployed assets.</span></div>
+    </div>
+  </details>
+  <div class="tabs" role="tablist" aria-label="Dashboard views">
+    <button class="tab active" data-tab="inventory" role="tab"><strong>Inventory</strong></button>
+    <button class="tab" data-tab="manage" role="tab"><strong>Targets</strong></button>
+    <button class="tab" data-tab="status" role="tab"><strong>Platforms</strong></button>
   </div>
   <section id="inventory" class="active"></section>
   <section id="manage"></section>
@@ -2402,10 +2816,32 @@ pre { overflow:auto; white-space:pre-wrap; background:#06111b; padding:14px; bor
 <script>
 let state = null;
 const esc = value => String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const pill = status => `<span class="pill ${esc(status)}">${esc(status || 'unknown')}</span>`;
-const maxSkillTokens = () => Math.max(1, ...((state?.skills || []).map(s => s.static_tokens || 0)));
-const maxMcpTokens = () => Math.max(1, ...((state?.mcps || []).map(m => m.static_tokens || 0)));
-const tokenMeter = (value, max) => `<span class="mono">${esc(value)}</span><span class="token-bar" aria-hidden="true"><span style="width:${Math.max(4, Math.round((Number(value || 0) / max) * 100))}%"></span></span>`;
+const formatNumber = value => new Intl.NumberFormat().format(Number(value || 0));
+const fileName = value => String(value || '').split(/[\\/]/).filter(Boolean).pop() || 'missing';
+function statusMeta(status) {
+  const normalized = status || 'unknown';
+  const labels = {healthy:'healthy', warning:'warning', invalid:'invalid', missing:'missing', unknown:'unknown'};
+  return {label: labels[normalized] || normalized, className: labels[normalized] ? normalized : 'unknown'};
+}
+function statusPill(status) {
+  const meta = statusMeta(status);
+  return `<span class="pill ${esc(meta.className)}">${esc(meta.label)}</span>`;
+}
+function tokenMeter(value, max, label='token estimate') {
+  return `<span class="token-meter" aria-label="${esc(label)}: ${esc(value)} tokens"><span class="mono">${esc(formatNumber(value))}</span><span>tokens</span></span>`;
+}
+function metricCard({label, value, detail, tone=''}) {
+  return `<div class="metric ${esc(tone)}"><div class="value">${esc(formatNumber(value))}</div><div class="label">${esc(label)}</div><div class="detail">${esc(detail || '')}</div></div>`;
+}
+function emptyRow(headersLength, message) {
+  return `<tr><td colspan="${headersLength}"><div class="empty-state">${esc(message)}</div></td></tr>`;
+}
+function sectionIntro(title, subtitle) {
+  return `<div class="section-head"><div><h2>${esc(title)}</h2><div class="helper">${esc(subtitle)}</div></div></div>`;
+}
+function table(headers, rows, emptyMessage='No rows yet.') {
+  return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('') || emptyRow(headers.length, emptyMessage)}</tbody></table></div>`;
+}
 async function api(path, options={}) {
   const res = await fetch(path, {headers:{'Content-Type':'application/json'}, ...options});
   const text = await res.text();
@@ -2415,33 +2851,54 @@ async function api(path, options={}) {
 }
 async function refresh() {
   state = await api('/api/state');
-  document.getElementById('paths').textContent = `Manifest: ${state.meta.manifest_path} | Lockfile: ${state.meta.lockfile_path}`;
+  document.getElementById('paths').textContent = `Manifest: ${fileName(state.meta.manifest_path)} | Lockfile: ${fileName(state.meta.lockfile_path)}`;
   renderSummary(); renderInventory(); renderManage(); renderStatus();
 }
 function renderSummary() {
+  const warningTone = state.summary.warnings ? 'warn' : 'good';
   const rows = [
-    ['Global targets', state.summary.targets], ['Packages', state.summary.packages], ['Skills', state.summary.skills],
-    ['Implicit skills', state.summary.implicit_skills], ['Warnings', state.summary.warnings],
-    ['Implicit skill tokens', state.summary.skill_static_tokens], ['MCP tokens', state.summary.mcp_static_tokens]
+    {label:'Targets', value: state.summary.targets, detail:'selected destinations'},
+    {label:'Packages', value: state.summary.packages, detail:'declared or lockfile-traced'},
+    {label:'Skills', value: state.summary.available_package_skills || state.summary.skills, detail:`${formatNumber(state.summary.disabled_package_skills || 0)} disabled · ${formatNumber(state.summary.manual_only_package_skills || 0)} manual only`},
+    {label:'Warnings', value: state.summary.warnings, detail:'review before deploy', tone: warningTone}
   ];
-  document.getElementById('summary').innerHTML = rows.map(([label, value]) => `<div class="card"><div class="value">${esc(value)}</div><div class="label">${esc(label)}</div></div>`).join('');
-}
-function table(headers, rows) {
-  return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('') || `<tr><td colspan="${headers.length}" class="subtle">No rows.</td></tr>`}</tbody></table></div>`;
+  document.getElementById('summary').innerHTML = rows.map(metricCard).join('');
 }
 function renderInventory() {
-  const packages = state.packages.map(p => `<tr><td class="name-cell">${esc(p.name)}</td><td>${esc(p.repo || p.path || '')}</td><td>${esc(p.uses_global_targets ? 'Global targets' : (p.deploy_targets || []).join(', '))}</td><td>${esc(((p.discovered||{}).skills||[]).length)} skills</td></tr>`);
-  const skills = state.skills.map(s => `<tr><td class="name-cell">${esc(s.name)}</td><td>${esc(s.package)}</td><td>${esc(s.implicit_invocation ? 'Implicit' : 'Manual only')}</td><td>${tokenMeter(s.static_tokens, maxSkillTokens())}</td></tr>`);
-  const mcps = state.mcps.map(m => `<tr><td class="name-cell">${esc(m.name)}</td><td>${esc(m.optional ? 'Optional' : 'Required')}</td><td>${esc(m.transport || (m.url ? 'http/sse' : 'stdio'))}</td><td>${esc(m.command || m.url || '')}</td><td>${tokenMeter(m.static_tokens, maxMcpTokens())}</td></tr>`);
-  document.getElementById('inventory').innerHTML = `<div class="section-head"><h2>Inventory management</h2><span class="subtle small">Configured assets with token usage in one place</span></div>${warningsHtml()}<h3>Packages</h3>${table(['Name','Source','Target policy','Discovered'], packages)}<h3>Skills</h3>${table(['Skill','Package','Invocation','Tokens'], skills)}<h3>MCP servers</h3>${table(['Name','Kind','Transport','Command or URL','Tokens'], mcps)}`;
+  const packages = state.packages.map(p => `<tr><td class="name-cell">${esc(p.name)}</td><td>${esc(p.repo || p.path || '')}</td><td>${esc(p.uses_global_targets ? 'Global targets' : (p.deploy_targets || []).join(', '))}</td><td>${esc((p.skill_inventory || []).length)} available / ${esc(((p.discovered||{}).skills||[]).length)} deployed</td><td>${esc((p.deployed_to || []).join(', ') || 'not deployed')}</td></tr>`);
+  const skills = state.skills.map(s => `<tr><td class="name-cell">${esc(s.name)}</td><td>${esc(s.package)}</td><td>${esc(s.implicit_invocation ? 'Implicit' : 'Manual only')}</td><td>${esc((s.deployed_to || []).join(', ') || 'not deployed')}</td><td>${tokenMeter(s.static_tokens, 1, `${s.name} token estimate`)}</td></tr>`);
+  const mcps = state.mcps.map(m => `<tr><td class="name-cell">${esc(m.name)}</td><td>${esc(m.optional ? 'Optional' : 'Required')}</td><td>${esc(m.transport || (m.url ? 'http/sse' : 'stdio'))}</td><td>${esc(m.command || m.url || '')}</td><td>${tokenMeter(m.static_tokens, 1, `${m.name} token estimate`)}</td></tr>`);
+  const controls = (state.packages || []).map(renderPackageSkillControls).join('') || '<div class="empty-state">No package skills are available to edit yet. Run sync after adding a package.</div>';
+  document.getElementById('inventory').innerHTML = `${sectionIntro('Inventory', 'Start with packages. Expand a package only when you need to change skill policy.')}${warningsHtml()}<div class="panel"><h3>Packages</h3>${table(['Name','Source','Target policy','Skills','Deployed to'], packages, 'No packages configured yet. Add a package to your Nexus manifest, then run sync.')}</div><h3>Package skill controls</h3><div class="notice">Saving skill controls updates the manifest only. Run Deploy or <span class="mono">nexus sync</span> to apply target filesystem changes.</div>${controls}<details><summary><span><strong>Currently deployed skills</strong><span class="helper"> ${esc(formatNumber(state.skills.length))} rows</span></span></summary><div class="disclosure-body">${table(['Skill','Package','Invocation','Deployed to','Tokens'], skills, 'No skills deployed yet. Run sync after adding a package with skills.')}</div></details><details><summary><span><strong>MCP servers</strong><span class="helper"> ${esc(formatNumber(state.mcps.length))} declared</span></span></summary><div class="disclosure-body">${table(['Name','Kind','Transport','Command or URL','Tokens'], mcps, 'No MCP servers declared yet. Add an MCP entry to your manifest to manage it across targets.')}</div></details>`;
+}
+function renderPackageSkillControls(pkg) {
+  const policy = pkg.skill_policy || {};
+  if (!policy.editable) return '';
+  const rows = (pkg.skill_inventory || []).map(skill => `<tr data-skill-row data-skill-name="${esc(skill.name)}"><td class="name-cell">${esc(skill.name)}</td><td><label class="inline-check"><input type="checkbox" data-field="enabled" ${skill.enabled ? 'checked' : ''}>Enabled</label></td><td><label class="inline-check"><input type="checkbox" data-field="manual_only" ${skill.manual_only ? 'checked' : ''}>Manual only</label></td><td>${esc(skill.deployed ? (skill.deployed_to || []).join(', ') : 'not deployed')}</td><td>${tokenMeter(skill.static_tokens || 0, 1, `${skill.name} token estimate`)}</td><td><span class="source-badge">${esc(skill.source || 'unknown')}</span></td></tr>`);
+  return `<details class="skill-control-panel" data-package-index="${esc(pkg.index)}" data-package-name="${esc(pkg.name)}"><summary><span class="skill-control-title"><h4>${esc(pkg.name)}</h4><span class="helper">${esc(policy.enabled_count || 0)} enabled · ${esc(policy.disabled_count || 0)} disabled · ${esc(policy.manual_only_count || 0)} manual only</span></span></summary><div class="disclosure-body"><div class="skill-policy-table">${table(['Skill','Enabled','Invocation','Deployed','Tokens','Source'], rows, 'No package skills discovered locally yet.')}</div><div class="row-actions"><button class="primary" data-save-package="${esc(pkg.index)}">Save skill policy</button></div><details><summary><span><strong>Save result</strong><span class="helper"> latest manifest update response</span></span></summary><div class="disclosure-body"><pre id="skillPolicyResult-${esc(pkg.index)}">No changes saved yet.</pre></div></details></div></details>`;
+}
+function collectPackageSkillState(packageIndex) {
+  const panel = document.querySelector(`[data-package-index="${CSS.escape(String(packageIndex))}"]`);
+  return [...panel.querySelectorAll('[data-skill-row]')].map(row => ({
+    name: row.dataset.skillName,
+    enabled: row.querySelector('[data-field="enabled"]').checked,
+    manual_only: row.querySelector('[data-field="manual_only"]').checked
+  }));
+}
+async function savePackageSkillPolicy(packageIndex) {
+  const pkg = (state.packages || []).find(p => String(p.index) === String(packageIndex));
+  const resultEl = document.getElementById(`skillPolicyResult-${packageIndex}`);
+  const result = await api('/api/packages/skills/save', {method:'POST', body: JSON.stringify({package_index: pkg.index, package: pkg.name, skills: collectPackageSkillState(packageIndex)})}).catch(e => ({ok:false, error:e.message}));
+  resultEl.textContent = JSON.stringify(result, null, 2);
+  if (result.ok) await refresh();
 }
 function warningsHtml() {
-  return (state.warnings || []).length ? `<div class="notice"><strong>Warnings</strong><ul>${state.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div>` : '';
+  return (state.warnings || []).length ? `<div class="notice warn"><strong>Review before deploy</strong><ul>${state.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div>` : '<div class="notice"><strong>No dashboard warnings.</strong> Local state has no lockfile or platform warnings reported by Nexus.</div>';
 }
 function renderManage() {
   const selected = new Set(state.deployment.global_targets || []);
   const chips = (state.deployment.available_targets || []).map(target => `<label class="target-chip"><input type="checkbox" data-target="${esc(target)}" ${selected.has(target) ? 'checked' : ''}>${esc(target)}</label>`).join('');
-  document.getElementById('manage').innerHTML = `<div class="section-head"><h2>Target policy</h2><span class="subtle small">Default: all platforms selected</span></div><div class="split"><div><div class="notice">Choose the global deployment targets. Packages deploy to these platforms unless a package explicitly overrides targets.</div><div class="target-grid" id="targetGrid">${chips}</div><div class="row-actions"><button class="primary" id="saveTargetsBtn">Save target policy</button></div><pre id="targetResult">All configured platforms are selected by default.</pre></div><aside class="side-panel"><h3>Current policy</h3><p class="subtle">${esc((state.deployment.global_targets || []).join(', '))}</p><p class="subtle">This updates the manifest targets list without showing the raw manifest in the dashboard.</p></aside></div>`;
+  document.getElementById('manage').innerHTML = `${sectionIntro('Targets', 'Choose where packages deploy by default. Package-level target filters still apply.')}<div class="panel"><div class="notice">Saving updates only the manifest target policy; raw secrets stay out of the dashboard. Deploy remains gated: <strong>Type deploy</strong> when prompted to run sync.</div><div class="target-grid" id="targetGrid">${chips}</div><div class="row-actions"><button class="primary" id="saveTargetsBtn">Save target policy</button></div><pre id="targetResult">Current targets: ${esc((state.deployment.global_targets || []).join(', ') || 'none selected')}</pre></div>`;
   document.getElementById('saveTargetsBtn').onclick = saveTargets;
 }
 async function saveTargets() {
@@ -2451,8 +2908,9 @@ async function saveTargets() {
   if (result.ok) await refresh();
 }
 function renderStatus() {
-  const rows = state.targets.map(t => `<tr><td class="name-cell">${esc(t.name)}</td><td>${pill(t.status)}</td><td>${esc(t.skill_path || '')}</td><td>${esc(t.skills.symlinks)} links / ${esc(t.skills.broken)} broken</td><td>${pill(t.mcp.status)} ${esc(t.mcp.server_count)} servers</td><td>${esc(t.hooks ? `${t.hooks.count} entries (${t.hooks.status})` : 'n/a')}</td></tr>`);
-  document.getElementById('status').innerHTML = `<div class="section-head"><h2>Platform deploy status</h2><span class="subtle small">Live local file checks per platform</span></div>${table(['Target','Status','Skill path','Skills','MCP config','Hooks'], rows)}`;
+  const rows = state.targets.map(t => `<tr><td class="name-cell">${esc(t.name)}</td><td>${statusPill(t.status)}</td><td>${esc(t.skill_path || '')}</td><td>${esc(t.skills.symlinks)} links / ${esc(t.skills.broken)} broken</td><td>${statusPill(t.mcp.status)} ${esc(t.mcp.server_count)} servers</td><td>${esc(t.hooks ? `${t.hooks.count} entries (${t.hooks.status})` : 'n/a')}</td></tr>`);
+  const counts = state.targets.reduce((acc, target) => { acc[target.status] = (acc[target.status] || 0) + 1; return acc; }, {});
+  document.getElementById('status').innerHTML = `${sectionIntro('Platforms', 'Live local deployment checks for skill links, MCP config, and hooks.')}<div class="helper" style="margin-bottom:10px">${esc(formatNumber(counts.healthy || 0))} healthy · ${esc(formatNumber(counts.warning || 0))} warning · ${esc(formatNumber((counts.invalid || 0) + (counts.missing || 0)))} missing or invalid</div>${table(['Target','Status','Skill path','Skills','MCP config','Hooks'], rows, 'No target checks are available yet.')}`;
 }
 async function syncAction(action, confirmText='') {
   const result = await api(`/api/sync/${action}`, {method:'POST', body: JSON.stringify({confirm: confirmText})}).catch(e => ({ok:false, error:e.message}));
@@ -2460,6 +2918,7 @@ async function syncAction(action, confirmText='') {
   await refresh();
 }
 document.querySelectorAll('.tab').forEach(btn => btn.onclick = () => { document.querySelectorAll('.tab, section').forEach(el => el.classList.remove('active')); btn.classList.add('active'); document.getElementById(btn.dataset.tab).classList.add('active'); });
+document.addEventListener('click', event => { if (event.target.matches('[data-save-package]')) savePackageSkillPolicy(event.target.dataset.savePackage); });
 document.getElementById('refreshBtn').onclick = refresh;
 document.getElementById('deployBtn').onclick = () => { const c = prompt('Type deploy to run nexus sync.'); if (c) syncAction('deploy', c); };
 refresh().catch(e => document.body.insertAdjacentHTML('afterbegin', `<pre>${esc(e.stack || e.message)}</pre>`));
@@ -2495,6 +2954,10 @@ def make_dashboard_handler(repo_dir: Path):
                 payload = _read_json_body(self)
                 if self.path == "/api/targets/save":
                     result = update_manifest_targets(self._cfg(), payload.get("targets", []))
+                    self._refresh_cfg()
+                    _json_response(self, 200, result)
+                elif self.path == "/api/packages/skills/save":
+                    result = update_manifest_package_skill_policy(self._cfg(), payload)
                     self._refresh_cfg()
                     _json_response(self, 200, result)
                 elif self.path == "/api/sync/deploy":
@@ -2717,12 +3180,15 @@ def cmd_sync(cfg: Config, args):
     for t in cfg.targets:
         p = cfg.mcp_path(t)
         if p:
-            mcp_paths.append(f"~/{p.relative_to(Path.home())}")
+            if p.is_absolute() and p.is_relative_to(Path.home()):
+                mcp_paths.append(f"~/{p.relative_to(Path.home())}")
+            else:
+                mcp_paths.append(str(p))
 
     print(file=sys.stderr)
     info("Sync complete!")
     print(f"  {total_skills} skills processed; deployed counts: {skill_summary}", file=sys.stderr)
-    print(f"  MCP servers synced to: {', '.join(mcp_paths)}", file=sys.stderr)
+    print(f"  MCP servers synced to: {', '.join(mcp_paths) if mcp_paths else 'no MCP-capable targets selected'}", file=sys.stderr)
     if accepted_optional:
         print(f"  Optional MCPs included: {' '.join(accepted_optional)}", file=sys.stderr)
     print(file=sys.stderr)
@@ -2869,7 +3335,10 @@ def cmd_doctor(cfg: Config, _args):
     # MCP configs
     for target in cfg.targets:
         mcp_path = cfg.mcp_path(target)
-        if not mcp_path or not mcp_path.exists():
+        if not mcp_path:
+            unchanged(f"{target} MCP config: unsupported")
+            continue
+        if not mcp_path.exists():
             warn(f"{target} MCP config: not found")
             continue
         try:
@@ -3039,7 +3508,7 @@ def main():
     sub.add_parser("list", help="Show installed packages, skills, and MCP servers")
     sp_audit = sub.add_parser("audit", help="Read-only inventory of existing target config")
     sp_audit.add_argument("--json", action="store_true", help="Print machine-readable audit output")
-    sp_audit.add_argument("--target", choices=sorted(TARGET_REGISTRY), help="Audit one target")
+    sp_audit.add_argument("--target", choices=sorted(set(TARGET_REGISTRY) | set(TARGET_ALIASES)), help="Audit one target")
     sp_audit.add_argument("--redact-home", action="store_true", help="Replace the home directory prefix with ~ in paths")
     sub.add_parser("doctor", help="Run diagnostics and health checks")
     sp_dashboard = sub.add_parser("dashboard", help="Open the local management dashboard")

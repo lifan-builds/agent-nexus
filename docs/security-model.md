@@ -63,8 +63,13 @@ Dashboard writes are limited to explicit actions:
 
 - target-policy saves validate the selected target list and atomically replace the
   manifest targets block,
+- package skill-policy saves validate the selected package and skills, then update
+  only `packages[].skills` and the manual-invocation fields under
+  `packages[].skill_overrides`,
 - deploy actions call the existing `sync --yes` path only after the UI sends the
   exact confirmation string.
+
+Skill-policy saves are structured writes, not raw manifest editing, and do not require MCP env/header values in the browser payload.
 
 The dashboard sanitizes MCP env and header values before returning state to the
 browser. It shows env/header key names only. Token and cost values are static

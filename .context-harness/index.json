@@ -1,22 +1,22 @@
 {
   "schema": 1,
-  "updated_at": "2026-07-07",
-  "source_hash": "e3592d35324cc7af6fa8fe133bee24577877c646c7e7db6cd83124b17f590aa3",
+  "updated_at": "2026-07-08",
+  "source_hash": "165d5eb4d8a39c116c604f57489389b3d178d2c3340486982c73b043c3c321a8",
   "sources": [
     {
       "path": "CONTEXT.md",
-      "sha256": "d5d9bb70deb3a7e6338c4b5656ec3c6656531cab4872589db164611953c9c1f8",
-      "lines": 155
+      "sha256": "d79bb1e2c8c3d366765c913162791555857f46dad47811499bd09cfe029df448",
+      "lines": 156
     },
     {
       "path": "NOW.md",
-      "sha256": "5335305d36eb0f14f4503a2b5926821884ca4f3989649d426f6dc01064667a3a",
+      "sha256": "c950505a803aaf1da1fc510c7fe4ea21b0c615e1c3d1a53291d01d29d9f57626",
       "lines": 16
     },
     {
       "path": "PLAN.md",
-      "sha256": "ffea20061ac2e423b0b87ef2f5003a1a791ac9a3f24aa8976cccba2e085fcc09",
-      "lines": 158
+      "sha256": "97242897e7bb9da23fcafd14f2f481a4419f06549bf0d660e372cfdf51c33578",
+      "lines": 171
     }
   ],
   "cards": [
@@ -30,7 +30,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 260,
       "tags": [
         "context",
@@ -56,7 +56,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 123,
       "tags": [
         "context",
@@ -86,7 +86,7 @@
       "scope": "project",
       "importance": 0.9,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 200,
       "tags": [
         "context",
@@ -119,7 +119,7 @@
       "scope": "project",
       "importance": 0.9,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 63,
       "tags": [
         "context",
@@ -148,7 +148,7 @@
       "scope": "project",
       "importance": 0.82,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 72,
       "tags": [
         "context",
@@ -177,7 +177,7 @@
       "scope": "project",
       "importance": 0.82,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 143,
       "tags": [
         "context",
@@ -209,7 +209,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 32,
       "tags": [
         "context",
@@ -235,8 +235,8 @@
       "scope": "project",
       "importance": 0.78,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
-      "tokens_est": 315,
+      "recency": "2026-07-08",
+      "tokens_est": 375,
       "tags": [
         "context",
         "learned-patterns",
@@ -248,7 +248,7 @@
       ],
       "card_path": ".context-harness/cards/ctx-context-learned-patterns.md",
       "chunk_path": "",
-      "content_sha256": "ebdf2b179ba1ddd32b9806cd06dd04ff04ab7dab12c4f5e8fb3f46afd35fb8e0",
+      "content_sha256": "86bcde77297361faef954fcb1ddf28830cce944ff9d31c20e98830e805e0e8d1",
       "key_facts": [
         "Hook aggregation must preserve script execution paths relative to package cache dir — superpowers hooks read their own SKILL.md at runtime via relative path.",
         "Codex hook deployment must preserve unmanaged user hooks by only stripping commands marked with --nexus-package, and tests must use a temporary CODEXHOME ins...",
@@ -267,7 +267,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 47,
       "tags": [
         "context",
@@ -291,7 +291,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 145,
       "tags": [
         "context",
@@ -321,7 +321,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 135,
       "tags": [
         "context",
@@ -348,7 +348,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 88,
       "tags": [
         "context",
@@ -378,7 +378,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 155,
       "tags": [
         "context",
@@ -409,7 +409,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 192,
       "tags": [
         "context",
@@ -440,7 +440,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 225,
       "tags": [
         "context",
@@ -474,7 +474,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 109,
       "tags": [
         "context",
@@ -504,7 +504,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 132,
       "tags": [
         "context",
@@ -533,7 +533,7 @@
       "scope": "project",
       "importance": 0.65,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 450,
       "tags": [
         "context",
@@ -556,15 +556,15 @@
     {
       "id": "ctx-now-now",
       "title": "NOW.md: Now",
-      "summary": "Agent Nexus competitive roadmap work is in progress. Phase 0 baseline is complete. Phase 1 public docs parity is in place. Phase 2 nexus audit read-only discovery is implemented and documented. Phase 3 MCP docs and go...",
+      "summary": "Agent Nexus competitive roadmap work is in progress. Broad target expansion is implemented: omitted manifest targets select the four core native adapters (claude, cursor, antigravity, codex), while targets: [\"\"] expan...",
       "source": "NOW.md#now",
       "source_path": "NOW.md",
       "kind": "resume",
       "scope": "task",
       "importance": 0.95,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
-      "tokens_est": 460,
+      "recency": "2026-07-08",
+      "tokens_est": 322,
       "tags": [
         "now",
         "resume"
@@ -576,13 +576,13 @@
       ],
       "card_path": ".context-harness/cards/ctx-now-now.md",
       "chunk_path": "",
-      "content_sha256": "5335305d36eb0f14f4503a2b5926821884ca4f3989649d426f6dc01064667a3a",
+      "content_sha256": "c950505a803aaf1da1fc510c7fe4ea21b0c615e1c3d1a53291d01d29d9f57626",
       "key_facts": [
-        "Agent Nexus competitive roadmap work is in progress. Phase 0 baseline is complete. Phase 1 public docs parity is in place. Phase 2 nexus audit read-only disc...",
+        "Agent Nexus competitive roadmap work is in progress. Broad target expansion is implemented: omitted manifest targets select the four core native adapters (cl...",
         "No implementation blocker is known.",
         "Competitive claims about AGHub/GAAL should be re-verified before publishing comparison copy externally.",
-        "Continue COMPETITIVEIMPROVEMENTPLAN.md with the next highest-value gap: CI/release quality from Phase 9, launch-ready story cleanup from Phase 10, or target...",
-        "Last modified: 2026-07-07"
+        "Continue COMPETITIVEIMPROVEMENTPLAN.md with the next highest-value gap: remaining Phase 9 release quality (CI, temp-home audit, golden config fixtures, light...",
+        "Last modified: 2026-07-07T23:59:00.000Z"
       ]
     },
     {
@@ -595,7 +595,7 @@
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 72,
       "tags": [
         "plan",
@@ -626,7 +626,7 @@
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 245,
       "tags": [
         "plan",
@@ -658,7 +658,7 @@
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 296,
       "tags": [
         "plan",
@@ -690,7 +690,7 @@
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 165,
       "tags": [
         "plan",
@@ -715,15 +715,15 @@
     {
       "id": "ctx-plan-progress",
       "title": "PLAN.md: Progress",
-      "summary": "[x] Completed competitive roadmap Phase 0 baseline: read required context/code/docs, captured CLI help, checked gitignored local-only files, and ran baseline verification.",
+      "summary": "[x] Completed competitive roadmap baseline, public docs parity, audit, MCP docs and tests, package trust docs, hook lifecycle hardening, demo assets, clone-based install polish, and subprocess CLI smoke coverage.",
       "source": "PLAN.md#progress",
       "source_path": "PLAN.md",
       "kind": "plan",
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
-      "tokens_est": 763,
+      "recency": "2026-07-08",
+      "tokens_est": 199,
       "tags": [
         "plan",
         "progress"
@@ -734,14 +734,13 @@
         "update context with task-local progress"
       ],
       "card_path": ".context-harness/cards/ctx-plan-progress.md",
-      "chunk_path": ".context-harness/chunks/ctx-plan-progress.md",
-      "content_sha256": "b68302f99b4a1444e6945e3c014cf31dae44d4e451f7fea9b9200fb73112913f",
+      "chunk_path": "",
+      "content_sha256": "2d8f6dac9a006751227876efd0a4a577a6a112ed4fa6a84c4975f138eae7ab7f",
       "key_facts": [
-        "[x] Completed competitive roadmap Phase 0 baseline: read required context/code/docs, captured CLI help, checked gitignored local-only files, and ran baseline...",
-        "[x] Added public docs for target/resource support, manifest fields, package behavior, and honest comparison positioning.",
-        "[x] Added copyable example manifests for minimal, Context Harness, MCP-only, team, and package-overlay setups.",
-        "[x] Linked the new docs and examples from README so the top-level public entry point points to deeper references.",
-        "[x] Added docs/package-trust.md to explain package sources, refs, pinning, discovery safety, executable surfaces, dry-run review, lockfile traceability, and..."
+        "[x] Completed competitive roadmap baseline, public docs parity, audit, MCP docs and tests, package trust docs, hook lifecycle hardening, demo assets, clone-b...",
+        "[x] Added package-level targets and skilloverrides, including Codex agents/openai.yaml overlays materialized under .nexus/generated/.",
+        "[x] Hardened JSON and Codex MCP merge/prune behavior around local keys, env placeholders, optional MCP lockfile semantics, and content outside the Codex mana...",
+        "[x] Made omitted manifest targets default to the four core native adapters (claude, cursor, antigravity, codex), added 41 skills target presets behind target..."
       ]
     },
     {
@@ -754,7 +753,7 @@
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
+      "recency": "2026-07-08",
       "tokens_est": 100,
       "tags": [
         "plan",
@@ -779,15 +778,15 @@
     {
       "id": "ctx-plan-verification",
       "title": "PLAN.md: Verification",
-      "summary": "python -m pytest tests/testnexus.py -k installlocal exits 0 with 4 passed after install polish.",
+      "summary": "python -m pytest tests/testnexus.py exits 0 with 73 passed after broad target expansion and simplification review.",
       "source": "PLAN.md#verification",
       "source_path": "PLAN.md",
       "kind": "plan",
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
-      "tokens_est": 966,
+      "recency": "2026-07-08",
+      "tokens_est": 1261,
       "tags": [
         "plan",
         "verification"
@@ -799,13 +798,13 @@
       ],
       "card_path": ".context-harness/cards/ctx-plan-verification.md",
       "chunk_path": ".context-harness/chunks/ctx-plan-verification.md",
-      "content_sha256": "13ab4fad155df5bb550f432672661cf148fa46031e6ed8c618cfd2b46e988171",
+      "content_sha256": "b34a2b34d19acbee37df0593f123dc946933543bd47d0c64dd91961b4e90cb20",
       "key_facts": [
-        "python -m pytest tests/testnexus.py -k installlocal exits 0 with 4 passed after install polish.",
-        "python -m pytest tests exits 0 with 57 passed after install polish.",
-        "python -m pycompile nexus.py exits 0 after install polish.",
-        "Markdown fence validation exits 0 after install polish.",
-        "python -m pytest tests exits 0 with 53 passed after adding demo proof assets."
+        "python -m pytest tests/testnexus.py exits 0 with 73 passed after broad target expansion and simplification review.",
+        "python -m pycompile nexus.py exits 0 after broad target expansion and simplification review.",
+        "Temp-home CLI smoke confirms omitted targets audit lists the four core targets and targets: [\"\"] audit lists 41 target presets including hermes, qwen-code, a...",
+        "python -m pytest tests/testnexus.py exits 0 with 64 passed after default platform parity changes.",
+        "python -m pycompile nexus.py exits 0 after default platform parity changes."
       ]
     },
     {
@@ -818,8 +817,8 @@
       "scope": "task",
       "importance": 0.85,
       "confidence": "confirmed",
-      "recency": "2026-07-07",
-      "tokens_est": 157,
+      "recency": "2026-07-08",
+      "tokens_est": 1091,
       "tags": [
         "plan",
         "archive"
@@ -830,8 +829,8 @@
         "update context with task-local progress"
       ],
       "card_path": ".context-harness/cards/ctx-plan-archive.md",
-      "chunk_path": "",
-      "content_sha256": "7b66d0c6ae58cfcee2e339d5e5115eaca4231b1112c3cad6078018bc29116c8b",
+      "chunk_path": ".context-harness/chunks/ctx-plan-archive.md",
+      "content_sha256": "e9f443ed97c28ef6db781223f2b2c6458a5b89f3a8c31e3294bedebaf1352ec9",
       "key_facts": [
         "Earlier 2026 work replaced the APM/deploy.sh workflow with Nexus, added cache",
         "snapshots, auto-discovery, hook dedupe, inline MCPs, lockfiles, Codex hook",

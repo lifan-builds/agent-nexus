@@ -64,7 +64,9 @@ packages:
       - systematic-debugging
 ```
 
-Only listed skills are deployed. Missing requested skills produce warnings.
+Only listed skills are deployed. If `skills` is omitted, all discovered skills are eligible. If `skills: []`, all skills from that package are disabled. Missing requested skills produce warnings.
+
+The dashboard Inventory controls edit this allowlist directly. Disabled skills can still appear in the dashboard when Nexus can inspect the local package cache, so you can re-enable them without hand-editing YAML.
 
 ### Hooks
 

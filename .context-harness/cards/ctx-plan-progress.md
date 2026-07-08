@@ -4,15 +4,15 @@ kind: plan
 importance: 0.85
 confidence: confirmed
 source: PLAN.md#progress
-chunk: .context-harness/chunks/ctx-plan-progress.md
-tokens_est: 763
+chunk: null
+tokens_est: 199
 tags: [plan, progress]
 ---
 
 # PLAN.md: Progress
 
 ## Summary
-[x] Completed competitive roadmap Phase 0 baseline: read required context/code/docs, captured CLI help, checked gitignored local-only files, and ran baseline verification.
+[x] Completed competitive roadmap baseline, public docs parity, audit, MCP docs and tests, package trust docs, hook lifecycle hardening, demo assets, clone-based install polish, and subprocess CLI smoke coverage.
 
 ## Use when
 - continuing the active task
@@ -20,12 +20,10 @@ tags: [plan, progress]
 - update context with task-local progress
 
 ## Key facts
-- [x] Completed competitive roadmap Phase 0 baseline: read required context/code/docs, captured CLI help, checked gitignored local-only files, and ran baseline...
-- [x] Added public docs for target/resource support, manifest fields, package behavior, and honest comparison positioning.
-- [x] Added copyable example manifests for minimal, Context Harness, MCP-only, team, and package-overlay setups.
-- [x] Linked the new docs and examples from README so the top-level public entry point points to deeper references.
-- [x] Added docs/package-trust.md to explain package sources, refs, pinning, discovery safety, executable surfaces, dry-run review, lockfile traceability, and...
+- [x] Completed competitive roadmap baseline, public docs parity, audit, MCP docs and tests, package trust docs, hook lifecycle hardening, demo assets, clone-b...
+- [x] Added package-level targets and skilloverrides, including Codex agents/openai.yaml overlays materialized under .nexus/generated/.
+- [x] Hardened JSON and Codex MCP merge/prune behavior around local keys, env placeholders, optional MCP lockfile semantics, and content outside the Codex mana...
+- [x] Made omitted manifest targets default to the four core native adapters (claude, cursor, antigravity, codex), added 41 skills target presets behind target...
 
 ## Open next
 - `PLAN.md#progress`
-- `.context-harness/chunks/ctx-plan-progress.md`

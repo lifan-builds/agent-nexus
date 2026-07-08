@@ -11,7 +11,13 @@ Use these screenshots to support launch pages, README assets, or issue replies.
 - A redacted manifest snippet with targets, one package, and one MCP.
 - A lockfile excerpt showing package source metadata, discovered assets, target deployments, overlays, and managed MCP names.
 - `nexus doctor` showing healthy target checks.
-- Optional dashboard status view if the UI is part of the launch story.
+- `docs/assets/dashboard-hero.png` showing the refreshed localhost dashboard overview.
+- `docs/assets/dashboard-management.png` showing target policy or platform health with confirmed deploy controls.
+
+## README Diagram Assets
+
+- `docs/assets/trust-path.svg` is a static diagram for the review-first workflow; keep it accessible with `<title>` and `<desc>`.
+- Do not reference a demo GIF in the README unless the GIF is actually committed.
 
 ## Redaction Rules
 

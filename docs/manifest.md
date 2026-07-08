@@ -46,7 +46,9 @@ targets:
   - codex
 ```
 
-Supported target names are `claude`, `cursor`, `antigravity`, and `codex`. Unknown targets are ignored by current deployment paths unless test fixtures provide custom paths.
+If `targets` is omitted, Nexus defaults to the four core native targets: `claude`, `cursor`, `antigravity`, and `codex`. Use `targets: ["*"]` to deploy skills to every skills target preset. Nexus currently includes 41 skills presets; only the core targets have tested MCP writers and hook support where listed in `docs/targets.md`.
+
+Common aliases such as `claude-code`, `google-antigravity`, `openai-codex`, `hermes-agent`, `qwen`, `roo-code`, `copilot`, `kilo`, and `open-code` are canonicalized to target keys. Unknown targets are ignored by current deployment paths unless test fixtures provide custom paths.
 
 ## Packages
 
@@ -99,7 +101,9 @@ packages:
       - verification-before-completion
 ```
 
-If a requested skill is not discovered, Nexus prints a warning and continues with the skills it did find.
+If `skills` is omitted, all discovered skills are eligible for deployment. If `skills` is a list, only those skills are eligible. If `skills: []`, no skills from that package are deployed. If a requested skill is not discovered, Nexus prints a warning and continues with the skills it did find.
+
+The dashboard Inventory controls write this same allowlist when you enable or disable package skills.
 
 ### Hook filter and disable behavior
 
@@ -172,6 +176,8 @@ packages:
 ```
 
 If `targets` is omitted inside a skill override, the override applies to all targets selected for that package.
+
+The dashboard's manual-invocation-only toggle writes both `skill_frontmatter.disable-model-invocation: true` and `agents_openai.policy.allow_implicit_invocation: false` for broad target compatibility. Clearing the toggle removes only those manual-only markers and preserves unrelated override metadata.
 
 ## MCP Servers
 

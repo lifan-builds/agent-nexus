@@ -5,14 +5,14 @@ importance: 0.95
 confidence: confirmed
 source: NOW.md#now
 chunk: null
-tokens_est: 460
+tokens_est: 322
 tags: [now, resume]
 ---
 
 # NOW.md: Now
 
 ## Summary
-Agent Nexus competitive roadmap work is in progress. Phase 0 baseline is complete. Phase 1 public docs parity is in place. Phase 2 nexus audit read-only discovery is implemented and documented. Phase 3 MCP docs and go...
+Agent Nexus competitive roadmap work is in progress. Broad target expansion is implemented: omitted manifest targets select the four core native adapters (claude, cursor, antigravity, codex), while targets: [""] expan...
 
 ## Use when
 - resuming the current session
@@ -20,11 +20,11 @@ Agent Nexus competitive roadmap work is in progress. Phase 0 baseline is complet
 - update context after current work
 
 ## Key facts
-- Agent Nexus competitive roadmap work is in progress. Phase 0 baseline is complete. Phase 1 public docs parity is in place. Phase 2 nexus audit read-only disc...
+- Agent Nexus competitive roadmap work is in progress. Broad target expansion is implemented: omitted manifest targets select the four core native adapters (cl...
 - No implementation blocker is known.
 - Competitive claims about AGHub/GAAL should be re-verified before publishing comparison copy externally.
-- Continue COMPETITIVEIMPROVEMENTPLAN.md with the next highest-value gap: CI/release quality from Phase 9, launch-ready story cleanup from Phase 10, or target...
-- Last modified: 2026-07-07
+- Continue COMPETITIVEIMPROVEMENTPLAN.md with the next highest-value gap: remaining Phase 9 release quality (CI, temp-home audit, golden config fixtures, light...
+- Last modified: 2026-07-07T23:59:00.000Z
 
 ## Open next
 - `NOW.md#now`

@@ -1,5 +1,15 @@
 # Verification
 
+- `python -m pytest tests/test_nexus.py` exits 0 with 73 passed after broad target expansion and simplification review.
+- `python -m py_compile nexus.py` exits 0 after broad target expansion and simplification review.
+- Temp-home CLI smoke confirms omitted `targets` audit lists the four core targets and `targets: ["*"]` audit lists 41 target presets including `hermes`, `qwen-code`, and `crush`; dry-run writes no lockfile and doctor exits 0.
+- `python -m pytest tests/test_nexus.py` exits 0 with 64 passed after default platform parity changes.
+- `python -m py_compile nexus.py` exits 0 after default platform parity changes.
+- Temp-home CLI smoke with omitted `targets` confirms `audit --json --redact-home` lists `claude`, `cursor`, `antigravity`, and `codex`; `sync --dry-run` writes no lockfile; `doctor` exits 0.
+- `python -m pytest tests/test_nexus.py -k 'cli_smoke or install_local'` exits 0 with 6 passed after Phase 9 CLI smoke coverage.
+- `python -m pytest tests` exits 0 with 59 passed after Phase 9 CLI smoke coverage.
+- `python -m py_compile nexus.py` exits 0 after Phase 9 CLI smoke coverage.
+- Markdown fence validation exits 0 after Phase 9 CLI smoke coverage.
 - `python -m pytest tests/test_nexus.py -k install_local` exits 0 with 4 passed after install polish.
 - `python -m pytest tests` exits 0 with 57 passed after install polish.
 - `python -m py_compile nexus.py` exits 0 after install polish.

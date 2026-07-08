@@ -5,7 +5,7 @@ importance: 0.78
 confidence: confirmed
 source: CONTEXT.md#learned-patterns
 chunk: null
-tokens_est: 315
+tokens_est: 375
 tags: [context, learned-patterns, lesson]
 ---
 

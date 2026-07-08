@@ -55,6 +55,7 @@ nexus.lock.yml    # Generated lockfile (resolved commits, hashes, deploy paths)
 - Skill metadata overlays must materialize under `.nexus/generated/<target>/skills/<skill>/` and target symlinks should point there; never write overlay metadata into immutable `.nexus/cache/` package snapshots.
 - Kasetto's MCP merge preserves existing keys (no overwrite) — nexus follows the same pattern to protect local secrets.
 - Codex MCP pruning must edit only the Nexus managed TOML block, remove stale managed server sections listed in the previous lockfile, and preserve content outside the block.
+- Omitted manifest `targets` default to the four core native adapters (`claude`, `cursor`, `antigravity`, `codex`); `targets: ["*"]` expands to all skills target presets, while MCP/hooks require tested target writers before public claims.
 - `~/.claude.json` is the target for user-scoped Claude Code MCP servers (not `~/.claude/.mcp.json`).
 - FINDINGS.md as security boundary: external/untrusted content goes here, never into PLANS.md — prevents prompt injection via auto-read hooks.
 - APM classifies hybrid packages by dominant type, missing assets — nexus always runs full auto-discovery regardless of what a package "looks like".

@@ -1,7 +1,9 @@
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
+import sys
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -17,6 +19,27 @@ def _run_installer(bin_dir: Path, *args: str):
     env["NEXUS_BIN_DIR"] = str(bin_dir)
     return subprocess.run(
         [str(ROOT / "scripts" / "install-local.sh"), *args],
+        text=True,
+        capture_output=True,
+        env=env,
+        check=False,
+    )
+
+
+def _cli_checkout(tmp_path: Path) -> Path:
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    shutil.copy(ROOT / "nexus.py", checkout / "nexus.py")
+    shutil.copy(ROOT / "nexus.example.yml", checkout / "nexus.example.yml")
+    return checkout
+
+
+def _run_cli(checkout: Path, *args: str, home: Path, codex_home: Path):
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+    env["CODEX_HOME"] = str(codex_home)
+    return subprocess.run(
+        [sys.executable, str(checkout / "nexus.py"), *args],
         text=True,
         capture_output=True,
         env=env,
@@ -80,6 +103,127 @@ def test_install_local_force_replaces_existing_command(tmp_path):
     assert result.returncode == 0, result.stderr
     assert link_path.is_symlink()
     assert os.readlink(link_path) == str(ROOT / "nexus.py")
+
+
+def test_cli_smoke_init_audit_sync_dry_run_and_doctor_use_temp_home(tmp_path):
+    checkout = _cli_checkout(tmp_path)
+    home = tmp_path / "home"
+    codex_home = tmp_path / "codex-home"
+
+    init = _run_cli(checkout, "init", home=home, codex_home=codex_home)
+
+    assert init.returncode == 0, init.stderr
+    assert (checkout / "nexus.personal.yml").exists()
+
+    (checkout / "nexus.personal.yml").write_text(
+        "name: smoke\n"
+        "packages: []\n"
+        "mcps: []\n"
+    )
+
+    audit = _run_cli(checkout, "audit", "--json", "--redact-home", home=home, codex_home=codex_home)
+    dry_run = _run_cli(checkout, "sync", "--dry-run", home=home, codex_home=codex_home)
+    doctor = _run_cli(checkout, "doctor", home=home, codex_home=codex_home)
+
+    assert audit.returncode == 0, audit.stderr
+    assert [target["name"] for target in json.loads(audit.stdout)["targets"]] == nexus.CORE_DEFAULT_TARGETS
+    assert str(home) not in audit.stdout
+    assert dry_run.returncode == 0, dry_run.stderr
+    assert "Dry run - no target configs or lockfiles written." in dry_run.stderr
+    assert not (checkout / "nexus.lock.yml").exists()
+    assert doctor.returncode == 0, doctor.stderr
+    assert "nexus doctor" in doctor.stderr
+    assert not (home / ".claude").exists()
+    assert not (home / ".cursor").exists()
+    assert not (home / ".gemini").exists()
+    assert not (codex_home / "hooks.json").exists()
+
+
+def test_config_defaults_to_core_targets(tmp_path):
+    (tmp_path / "nexus.yml").write_text("name: defaults\npackages: []\nmcps: []\n")
+
+    cfg = nexus.Config(tmp_path)
+
+    assert cfg.targets == nexus.CORE_DEFAULT_TARGETS
+
+
+def test_config_wildcard_targets_expand_to_all_skill_presets(tmp_path):
+    (tmp_path / "nexus.yml").write_text("name: defaults\ntargets: ['*']\npackages: []\nmcps: []\n")
+
+    cfg = nexus.Config(tmp_path)
+
+    assert cfg.targets == nexus.skill_target_names()
+    assert "hermes" in cfg.targets
+    assert "qwen-code" in cfg.targets
+    assert "crush" in cfg.targets
+
+
+def test_config_canonicalizes_target_aliases(tmp_path):
+    (tmp_path / "nexus.yml").write_text(
+        "name: aliases\n"
+        "targets:\n"
+        "  - claude-code\n"
+        "  - openai-codex\n"
+        "  - Google Antigravity\n"
+        "  - cursor\n"
+        "  - claude code\n"
+    )
+
+    cfg = nexus.Config(tmp_path)
+
+    assert cfg.targets == ["claude", "codex", "antigravity", "cursor"]
+
+
+def test_broad_target_presets_have_expected_skill_paths(tmp_path):
+    (tmp_path / "nexus.yml").write_text("name: paths\npackages: []\nmcps: []\n")
+    cfg = nexus.Config(tmp_path)
+
+    assert cfg.skill_path("hermes") == Path.home() / ".hermes" / "skills"
+    assert cfg.skill_path("qwen-code") == tmp_path / ".qwen" / "skills"
+    assert cfg.skill_path("crush") == tmp_path / ".crush" / "skills"
+    assert cfg.skill_path("opencode") == Path.home() / ".config" / "opencode" / "skills"
+    assert cfg.skill_path("windsurf") == Path.home() / ".codeium" / "windsurf" / "skills"
+    assert cfg.mcp_path("hermes") is None
+    assert cfg.mcp_path("qwen-code") is None
+    assert nexus.TARGET_REGISTRY["hermes"]["status"]["mcp"] == "planned"
+
+
+def test_broad_target_aliases_canonicalize():
+    assert nexus.canonical_targets(["hermes-agent", "qwen", "roo-code", "copilot", "kilo", "open-code"]) == [
+        "hermes",
+        "qwen-code",
+        "roo",
+        "github-copilot",
+        "kilo-code",
+        "opencode",
+    ]
+
+
+def test_dashboard_model_uses_all_default_targets(tmp_path):
+    (tmp_path / "nexus.yml").write_text("name: defaults\npackages: []\nmcps: []\n")
+    cfg = nexus.Config(tmp_path)
+
+    model = nexus.build_dashboard_model(cfg)
+
+    assert model["deployment"]["default_to_all"] is False
+    assert model["deployment"]["global_targets"] == nexus.CORE_DEFAULT_TARGETS
+    assert model["deployment"]["available_targets"] == list(nexus.TARGET_REGISTRY)
+    assert model["summary"]["targets"] == len(nexus.CORE_DEFAULT_TARGETS)
+    assert "codex" in model["deployment"]["global_targets"]
+    assert "hermes" in model["deployment"]["available_targets"]
+
+
+def test_cli_smoke_init_refuses_to_overwrite_existing_manifest(tmp_path):
+    checkout = _cli_checkout(tmp_path)
+    home = tmp_path / "home"
+    codex_home = tmp_path / "codex-home"
+
+    first = _run_cli(checkout, "init", home=home, codex_home=codex_home)
+    second = _run_cli(checkout, "init", home=home, codex_home=codex_home)
+
+    assert first.returncode == 0, first.stderr
+    assert second.returncode == 1
+    assert "already exists" in second.stderr
 
 
 def test_antigravity_sse_uses_server_url():
@@ -456,6 +600,26 @@ def test_package_without_skill_allowlist_keeps_all_discovered_skills():
     filtered = nexus.apply_package_filters(discovery, {})
 
     assert [s["name"] for s in filtered["skills"]] == ["diagnose", "obsidian-vault"]
+
+
+def test_package_targets_canonicalize_aliases_and_preserve_constraints():
+    pkg = {"targets": ["openai-codex", "claude-code", "openai codex", "hermes-agent"]}
+
+    assert nexus.package_targets(pkg, ["claude", "codex", "hermes"]) == ["codex", "claude", "hermes"]
+    assert nexus.package_targets(pkg, ["claude"]) == ["claude"]
+    assert nexus.package_targets({"targets": ["openai-codex"]}, ["claude"]) == []
+    assert nexus.package_targets({"targets": ["*"]}, ["claude", "hermes"]) == ["claude", "hermes"]
+
+
+def test_overlay_targets_canonicalize_aliases(tmp_path):
+    skill = tmp_path / "pkg" / "skills" / "example"
+    _write_skill(skill, "example")
+    pkg = _overlay_pkg(skill, ["openai-codex"])
+
+    assert nexus.overlay_targets(pkg, "example", ["codex", "claude"]) == ["codex"]
+    assert nexus.skill_overlays(pkg, "example", ["codex", "claude"]) == [
+        {"skill": "example", "target": "codex", "type": "agents_openai"},
+    ]
 
 
 def test_package_targets_limit_skill_deployment_and_pruning(tmp_path):
@@ -982,6 +1146,197 @@ def test_dashboard_model_handles_missing_lockfile(tmp_path):
     assert any("missing" in warning for warning in model["warnings"])
 
 
+def test_dashboard_model_includes_disabled_package_skills_from_cache(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    enabled = _write_skill(tmp_path / "cache" / "pkg" / "skills" / "enabled", "enabled")
+    _write_skill(tmp_path / "cache" / "pkg" / "skills" / "disabled", "disabled")
+    cfg.data = {"packages": [{"path": "cache/pkg", "skills": ["enabled"]}], "mcps": [], "targets": ["codex"]}
+    nexus.write_lockfile({
+        "lockfile_version": 1,
+        "packages": [{
+            "name": "pkg",
+            "path": str(enabled.parents[1]),
+            "discovered": {"skills": ["enabled"]},
+            "deployed_to": ["codex"],
+        }],
+    }, cfg.lockfile_path)
+
+    model = nexus.build_dashboard_model(cfg)
+    inventory = {skill["name"]: skill for skill in model["packages"][0]["skill_inventory"]}
+
+    assert set(inventory) == {"enabled", "disabled"}
+    assert inventory["enabled"]["enabled"] is True
+    assert inventory["disabled"]["enabled"] is False
+    assert inventory["disabled"]["deployed"] is False
+    assert model["summary"]["available_package_skills"] == 2
+    assert model["summary"]["disabled_package_skills"] == 1
+
+
+
+def test_dashboard_model_marks_manual_only_from_skill_overrides(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    skill = _write_skill(tmp_path / "cache" / "pkg" / "skills" / "frontmatter-only", "frontmatter-only")
+    _write_skill(tmp_path / "cache" / "pkg" / "skills" / "agents-only", "agents-only")
+    cfg.data = {
+        "packages": [{
+            "path": "cache/pkg",
+            "skill_overrides": {
+                "frontmatter-only": {"skill_frontmatter": {"disable-model-invocation": True}},
+                "agents-only": {"agents_openai": {"policy": {"allow_implicit_invocation": False}}},
+            },
+        }],
+        "mcps": [],
+        "targets": ["codex"],
+    }
+    nexus.write_lockfile({
+        "lockfile_version": 1,
+        "packages": [{
+            "name": "pkg",
+            "path": str(skill.parents[1]),
+            "discovered": {"skills": ["frontmatter-only", "agents-only"]},
+            "deployed_to": ["codex"],
+        }],
+    }, cfg.lockfile_path)
+
+    model = nexus.build_dashboard_model(cfg)
+    inventory = {skill["name"]: skill for skill in model["packages"][0]["skill_inventory"]}
+
+    assert inventory["frontmatter-only"]["manual_only"] is True
+    assert inventory["agents-only"]["manual_only"] is True
+    assert model["summary"]["manual_only_package_skills"] == 2
+
+
+
+def test_dashboard_skill_policy_save_updates_allowlist_and_preserves_secrets(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    first = _write_skill(tmp_path / "cache" / "pkg" / "skills" / "first", "first")
+    _write_skill(tmp_path / "cache" / "pkg" / "skills" / "second", "second")
+    cfg.yml_path.write_text(
+        "targets: [codex]\n"
+        "packages:\n"
+        "  - path: cache/pkg\n"
+        "mcps:\n"
+        "  - name: secret\n"
+        "    command: npx\n"
+        "    env:\n"
+        "      TOKEN: keep-me\n"
+    )
+    cfg._data = None
+    nexus.write_lockfile({
+        "lockfile_version": 1,
+        "packages": [{"name": "pkg", "path": str(first.parents[1]), "discovered": {"skills": ["first"]}}],
+    }, cfg.lockfile_path)
+
+    result = nexus.update_manifest_package_skill_policy(cfg, {
+        "package_index": 0,
+        "package": "pkg",
+        "skills": [
+            {"name": "first", "enabled": True, "manual_only": False},
+            {"name": "second", "enabled": False, "manual_only": False},
+        ],
+    })
+    saved = nexus.parse_manifest_text(cfg.yml_path.read_text())
+
+    assert result["enabled_skills"] == ["first"]
+    assert saved["packages"][0]["skills"] == ["first"]
+    assert saved["mcps"][0]["env"]["TOKEN"] == "keep-me"
+
+
+
+def test_dashboard_skill_policy_save_disables_all_or_removes_allowlist(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    first = _write_skill(tmp_path / "cache" / "pkg" / "skills" / "first", "first")
+    _write_skill(tmp_path / "cache" / "pkg" / "skills" / "second", "second")
+    cfg.yml_path.write_text("targets: [codex]\npackages:\n  - path: cache/pkg\n    skills: [first]\n")
+    cfg._data = None
+    nexus.write_lockfile({
+        "lockfile_version": 1,
+        "packages": [{"name": "pkg", "path": str(first.parents[1]), "discovered": {"skills": ["first"]}}],
+    }, cfg.lockfile_path)
+
+    nexus.update_manifest_package_skill_policy(cfg, {
+        "package_index": 0,
+        "package": "pkg",
+        "skills": [
+            {"name": "first", "enabled": False, "manual_only": False},
+            {"name": "second", "enabled": False, "manual_only": False},
+        ],
+    })
+    assert nexus.parse_manifest_text(cfg.yml_path.read_text())["packages"][0]["skills"] == []
+
+    cfg._data = None
+    nexus.update_manifest_package_skill_policy(cfg, {
+        "package_index": 0,
+        "package": "pkg",
+        "skills": [
+            {"name": "first", "enabled": True, "manual_only": False},
+            {"name": "second", "enabled": True, "manual_only": False},
+        ],
+    })
+    assert "skills" not in nexus.parse_manifest_text(cfg.yml_path.read_text())["packages"][0]
+
+
+
+def test_dashboard_skill_policy_save_sets_and_clears_manual_only(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    skill = _write_skill(tmp_path / "cache" / "pkg" / "skills" / "example", "example")
+    cfg.yml_path.write_text(
+        "targets: [codex]\n"
+        "packages:\n"
+        "  - path: cache/pkg\n"
+        "    skill_overrides:\n"
+        "      example:\n"
+        "        targets: [codex]\n"
+        "        cost:\n"
+        "          estimated_tokens_per_call: 10\n"
+        "        agents_openai:\n"
+        "          interface:\n"
+        "            display_name: Keep Me\n"
+    )
+    cfg._data = None
+    nexus.write_lockfile({
+        "lockfile_version": 1,
+        "packages": [{"name": "pkg", "path": str(skill.parents[1]), "discovered": {"skills": ["example"]}}],
+    }, cfg.lockfile_path)
+
+    nexus.update_manifest_package_skill_policy(cfg, {
+        "package_index": 0,
+        "package": "pkg",
+        "skills": [{"name": "example", "enabled": True, "manual_only": True}],
+    })
+    override = nexus.parse_manifest_text(cfg.yml_path.read_text())["packages"][0]["skill_overrides"]["example"]
+    assert override["skill_frontmatter"]["disable-model-invocation"] is True
+    assert override["agents_openai"]["policy"]["allow_implicit_invocation"] is False
+    assert override["agents_openai"]["interface"]["display_name"] == "Keep Me"
+    assert override["cost"]["estimated_tokens_per_call"] == 10
+
+    cfg._data = None
+    nexus.update_manifest_package_skill_policy(cfg, {
+        "package_index": 0,
+        "package": "pkg",
+        "skills": [{"name": "example", "enabled": True, "manual_only": False}],
+    })
+    override = nexus.parse_manifest_text(cfg.yml_path.read_text())["packages"][0]["skill_overrides"]["example"]
+    assert "skill_frontmatter" not in override
+    assert "policy" not in override["agents_openai"]
+    assert override["agents_openai"]["interface"]["display_name"] == "Keep Me"
+    assert override["targets"] == ["codex"]
+
+
+
+def test_dashboard_html_includes_safety_and_api_hooks():
+    html = nexus.render_dashboard_html()
+
+    assert "/api/state" in html
+    assert "/api/sync/deploy" in html
+    assert "/api/packages/skills/save" in html
+    assert "Type deploy" in html
+    assert "Manual only" in html
+    assert "localhost only" in html
+    assert "redacted secrets" in html
+    assert "confirmed deploys" in html
+
+
 def test_dashboard_manifest_validation_and_atomic_save(tmp_path):
     cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
     text = "name: edited\ntargets: [codex]\npackages: []\nmcps: []\n"
@@ -1030,12 +1385,13 @@ def test_dashboard_target_policy_save_updates_targets_only(tmp_path):
         "  - path: pkg\n"
     )
 
-    result = nexus.update_manifest_targets(cfg, ["claude", "cursor"])
+    result = nexus.update_manifest_targets(cfg, ["claude-code", "openai-codex", "cursor"])
     saved = cfg.yml_path.read_text()
     data = nexus.parse_manifest_text(saved)
 
     assert result["ok"] is True
-    assert data["targets"] == ["claude", "cursor"]
+    assert result["targets"] == ["claude", "codex", "cursor"]
+    assert data["targets"] == ["claude", "codex", "cursor"]
     assert data["packages"] == [{"path": "pkg"}]
 
 

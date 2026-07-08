@@ -5,14 +5,14 @@ importance: 0.85
 confidence: confirmed
 source: PLAN.md#verification
 chunk: .context-harness/chunks/ctx-plan-verification.md
-tokens_est: 966
+tokens_est: 1261
 tags: [plan, verification]
 ---
 
 # PLAN.md: Verification
 
 ## Summary
-python -m pytest tests/testnexus.py -k installlocal exits 0 with 4 passed after install polish.
+python -m pytest tests/testnexus.py exits 0 with 73 passed after broad target expansion and simplification review.
 
 ## Use when
 - continuing the active task
@@ -20,11 +20,11 @@ python -m pytest tests/testnexus.py -k installlocal exits 0 with 4 passed after 
 - update context with task-local progress
 
 ## Key facts
-- python -m pytest tests/testnexus.py -k installlocal exits 0 with 4 passed after install polish.
-- python -m pytest tests exits 0 with 57 passed after install polish.
-- python -m pycompile nexus.py exits 0 after install polish.
-- Markdown fence validation exits 0 after install polish.
-- python -m pytest tests exits 0 with 53 passed after adding demo proof assets.
+- python -m pytest tests/testnexus.py exits 0 with 73 passed after broad target expansion and simplification review.
+- python -m pycompile nexus.py exits 0 after broad target expansion and simplification review.
+- Temp-home CLI smoke confirms omitted targets audit lists the four core targets and targets: [""] audit lists 41 target presets including hermes, qwen-code, a...
+- python -m pytest tests/testnexus.py exits 0 with 64 passed after default platform parity changes.
+- python -m pycompile nexus.py exits 0 after default platform parity changes.
 
 ## Open next
 - `PLAN.md#verification`

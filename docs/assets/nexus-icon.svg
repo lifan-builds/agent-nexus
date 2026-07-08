@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Agent Nexus icon</title>
+  <desc id="desc">A manifest with an approval check for review-first agent configuration.</desc>
+  <rect width="256" height="256" rx="48" fill="#071018"/>
+  <path d="M74 42h77l38 38v134H74V42Z" fill="#0b1520" stroke="#31d0aa" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M151 43v38h38" fill="none" stroke="#31d0aa" stroke-width="14" stroke-linejoin="round"/>
+  <circle cx="171" cy="164" r="43" fill="#65a7ff"/>
+  <path d="m148 164 16 16 32-34" fill="none" stroke="#071018" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

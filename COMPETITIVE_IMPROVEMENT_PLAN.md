@@ -103,7 +103,7 @@ Based on current repo and known capabilities, Agent Nexus already has several in
 - Hook dedupe and stale managed hook cleanup.
 - Lockfile traceability.
 - `doctor` diagnostics.
-- Four high-value targets: Claude Code, Cursor, Google Antigravity, and Codex.
+- Four core native targets: Claude Code, Cursor, Google Antigravity, and Codex, plus 41 skills target presets behind explicit `targets: ["*"]` opt-in.
 - Python single-file implementation with PyYAML as the only runtime dependency.
 
 ## North Star User Experience
@@ -661,8 +661,8 @@ Goal: make safety claims continuously verifiable.
 - [ ] Ensure tests do not touch real HOME or real agent configs.
 - [ ] Use temporary HOME/CODEX_HOME in all filesystem tests.
 - [ ] Add golden fixture snapshots for target config writes.
-- [ ] Add CLI smoke tests for `init`, `audit`, `sync --dry-run`, `doctor`, and error cases.
-- [ ] Add py_compile check.
+- [x] Add CLI smoke tests for `init`, `audit`, `sync --dry-run`, `doctor`, and error cases.
+- [x] Add py_compile check.
 - [ ] Add README/docs link checker if lightweight.
 
 ### Acceptance criteria

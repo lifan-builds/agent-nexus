@@ -1,8 +1,10 @@
 # Target And Resource Matrix
 
-Agent Nexus deploys a single manifest into native target files for Claude Code, Cursor, Google Antigravity, and Codex. This page separates implemented deployment behavior from discovery-only and planned behavior.
+Agent Nexus has **4 core native targets** and **41 skills target presets**. If `targets` is omitted, Nexus selects the core native targets: Claude Code, Cursor, Google Antigravity, and Codex. Use `targets: ["*"]` to deploy skills to every skills preset.
 
-## Summary
+Broad presets are skills-first. MCP and hooks stay disabled unless Nexus has a tested native writer for that target.
+
+## Core Native Targets
 
 | Resource | Claude Code | Cursor | Antigravity | Codex | Status |
 | --- | --- | --- | --- | --- | --- |
@@ -18,6 +20,52 @@ Agent Nexus deploys a single manifest into native target files for Claude Code, 
 | Lockfile | records package discovery, target deploys, overlays, and managed MCP names | records package discovery, target deploys, overlays, and managed MCP names | records package discovery, target deploys, overlays, and managed MCP names | records package discovery, target deploys, overlays, and managed MCP names | implemented |
 | Doctor | checks skill links, MCP config, overlays, and hook status where applicable | checks skill links, MCP config, overlays, and hook status where applicable | checks skill links, MCP config, and overlays | checks skill links, MCP config, overlays, and hooks | implemented |
 | Audit | read-only inventory | read-only inventory | read-only inventory | read-only inventory | implemented |
+
+## Skills Target Presets
+
+| Target key | Display name | Skills path | MCP | Hooks |
+| --- | --- | --- | --- | --- |
+| `adal` | AdaL | `.adal/skills/` | unsupported | unsupported |
+| `amp` | Amp | `~/.config/agents/skills/` | unsupported | unsupported |
+| `antigravity` | Google Antigravity | `~/.gemini/antigravity/skills/` | implemented | unsupported |
+| `augment` | Augment | `~/.augment/skills/` | unsupported | unsupported |
+| `claude` | Claude Code | `~/.claude/skills/` | implemented | implemented |
+| `cline` | Cline | `~/.agents/skills/` | unsupported | unsupported |
+| `codebuddy` | CodeBuddy | `.codebuddy/skills/` | unsupported | unsupported |
+| `codex` | Codex | `~/.codex/skills/` | implemented | implemented |
+| `command-code` | Command Code | `.commandcode/skills/` | unsupported | unsupported |
+| `continue` | Continue | `~/.continue/skills/` | unsupported | unsupported |
+| `crush` | Crush | `.crush/skills/` | planned | unsupported |
+| `cursor` | Cursor | `~/.cursor/skills/` | implemented | implemented |
+| `droid` | Droid | `.factory/skills/` | unsupported | unsupported |
+| `gemini-cli` | Gemini CLI | `~/.gemini/skills/` | unsupported | unsupported |
+| `github-copilot` | GitHub Copilot | `~/.copilot/skills/` | unsupported | unsupported |
+| `goose` | Goose | `~/.config/goose/skills/` | planned | unsupported |
+| `hermes` | Hermes Agent | `~/.hermes/skills/` | planned | unsupported |
+| `iflow-cli` | iFlow CLI | `.iflow/skills/` | unsupported | unsupported |
+| `junie` | Junie | `~/.junie/skills/` | planned | unsupported |
+| `kilo-code` | Kilo Code | `.kilocode/skills/` | unsupported | unsupported |
+| `kimi-code` | Kimi Code CLI | `.agents/skills/` | unsupported | unsupported |
+| `kiro-cli` | Kiro CLI | `~/.kiro/skills/` | unsupported | unsupported |
+| `kode` | Kode | `.kode/skills/` | unsupported | unsupported |
+| `mcpjam` | MCPJam | `.mcpjam/skills/` | unsupported | unsupported |
+| `mistral-vibe` | Mistral Vibe | `.vibe/skills/` | unsupported | unsupported |
+| `mux` | Mux | `.mux/skills/` | unsupported | unsupported |
+| `neovate` | Neovate | `.neovate/skills/` | unsupported | unsupported |
+| `openclaw` | OpenClaw | `~/.openclaw/skills/` | unsupported | unsupported |
+| `opencode` | OpenCode | `~/.config/opencode/skills/` | planned | unsupported |
+| `openhands` | OpenHands | `~/.openhands/skills/` | unsupported | unsupported |
+| `pi` | Pi | `.pi/skills/` | unsupported | unsupported |
+| `pochi` | Pochi | `.pochi/skills/` | unsupported | unsupported |
+| `qoder` | Qoder | `.qoder/skills/` | unsupported | unsupported |
+| `qwen-code` | Qwen Code | `.qwen/skills/` | planned | unsupported |
+| `replit` | Replit | `~/.config/agents/skills/` | unsupported | unsupported |
+| `roo` | Roo Code | `~/.roo/skills/` | unsupported | unsupported |
+| `trae` | Trae | `~/.trae/skills/` | unsupported | unsupported |
+| `trae-cn` | Trae CN | `.trae/skills/` | unsupported | unsupported |
+| `warp` | Warp | `~/.agents/skills/` | unsupported | unsupported |
+| `windsurf` | Windsurf | `~/.codeium/windsurf/skills/` | planned | unsupported |
+| `zencoder` | Zencoder | `.zencoder/skills/` | unsupported | unsupported |
 
 ## Target Details
 
@@ -57,4 +105,5 @@ Agent Nexus deploys a single manifest into native target files for Claude Code, 
 - **Implemented** means Nexus writes or verifies the target resource today and tests cover the core behavior.
 - **Partial** means Nexus supports some target/resource behavior, but the behavior is intentionally narrower than a complete native integration.
 - **Lockfile only** means Nexus discovers the asset and records it for traceability, but does not deploy a native target file.
-- **Planned** means the roadmap calls for the capability, but the current CLI does not implement it.
+- **Planned** means Nexus knows the likely native config path, but does not write it until merge semantics are implemented and tested.
+- **Unsupported** means Nexus intentionally does not manage that resource for the target today.

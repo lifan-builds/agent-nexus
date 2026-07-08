@@ -1,8 +1,31 @@
 # Agent Nexus
 
 <p align="center">
-  <strong>One manifest for the agent tools you trust.</strong><br />
-  Install MCP servers, skills, hooks, and GitHub agent packages across Claude Code, Cursor, Google Antigravity, and Codex.
+  <img src="docs/assets/nexus-icon.svg" alt="Agent Nexus icon" width="96" height="96">
+</p>
+
+<p align="center">
+  <strong>The safe package manager for your agent workspace.</strong><br />
+  One manifest for MCP servers, skills, hooks, and GitHub agent packages across Claude Code, Cursor, Google Antigravity, and Codex — with 41 skill target presets available when you opt in.
+</p>
+
+<p align="center">
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white">
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-31d0aa?style=flat-square">
+  <img alt="Local first" src="https://img.shields.io/badge/local--first-dashboard-0d1824?style=flat-square">
+  <img alt="Review first" src="https://img.shields.io/badge/review--first-sync-0d1824?style=flat-square">
+</p>
+
+<p align="center">
+  <a href="#install-it-yourself"><img alt="Quickstart" src="https://img.shields.io/badge/Quickstart-Install%20safely-31d0aa?style=for-the-badge"></a>
+  <a href="#let-your-agent-install-it"><img alt="Agent install prompt" src="https://img.shields.io/badge/Agent%20prompt-Copy%20%26%20run-65a7ff?style=for-the-badge"></a>
+  <a href="docs/demo-transcript.md"><img alt="Demo transcript" src="https://img.shields.io/badge/Demo-Proof%20transcript-0d1824?style=for-the-badge"></a>
+  <a href="docs/security-model.md"><img alt="Security model" src="https://img.shields.io/badge/Security-Review%20model-0d1824?style=for-the-badge"></a>
+  <a href="docs/comparison.md"><img alt="Comparison guide" src="https://img.shields.io/badge/Compare-Category%20guide-0d1824?style=for-the-badge"></a>
+</p>
+
+<p align="center">
+  <img src="docs/assets/dashboard-hero.png" alt="Agent Nexus dashboard showing package inventory, target policy, platform status, and token estimates" width="920">
 </p>
 
 <p align="center">
@@ -15,7 +38,7 @@
 
 Agent Nexus is a small, review-first package manager for your coding-agent workspace.
 
-Instead of hand-editing separate config files for Claude Code, Cursor, Google Antigravity, and Codex, you describe your preferred agent stack once:
+Instead of hand-editing separate config files for every coding agent, you describe your preferred agent stack once. Nexus defaults to the four core native targets (Claude Code, Cursor, Google Antigravity, and Codex) and can deploy skills to 41 target presets when you opt in:
 
 - which targets you use
 - which GitHub or local agent packages to install
@@ -45,6 +68,10 @@ Agent Nexus turns that sprawl into a repeatable workflow:
 
 ## The 30-second picture
 
+<p align="center">
+  <img src="docs/assets/trust-path.svg" alt="Agent Nexus flow from manifest to dry-run review, sync, doctor verification, and lockfile traceability" width="920">
+</p>
+
 ```yaml
 name: my-agent-workspace
 version: 1.0.0
@@ -54,6 +81,8 @@ targets:
   - cursor
   - antigravity
   - codex
+# If omitted, Nexus defaults to these four core targets.
+# Use targets: ["*"] to deploy skills to all 41 target presets.
 
 packages:
   - repo: lifan-builds/context-harness
@@ -78,6 +107,24 @@ python nexus.py doctor
 ```
 
 Nexus fetches packages, discovers assets, links skills into each target, merges MCP servers safely, installs managed hooks, and writes a lockfile showing exactly what went where.
+
+## Start safe
+
+Use the read-only path before writing any target config:
+
+```bash
+python nexus.py audit --redact-home
+python nexus.py sync --dry-run
+python nexus.py doctor
+```
+
+`audit` inventories local state without writing. `sync --dry-run` previews executable MCP and hook changes. `doctor` verifies what landed after a real sync.
+
+<p align="center">
+  <a href="docs/demo-transcript.md"><img alt="Follow the demo transcript" src="https://img.shields.io/badge/Follow-Demo%20transcript-31d0aa?style=flat-square"></a>
+  <a href="docs/demo-recording.md"><img alt="Record a sanitized demo" src="https://img.shields.io/badge/Record-Sanitized%20demo-65a7ff?style=flat-square"></a>
+  <a href="docs/security-model.md"><img alt="Read the security model" src="https://img.shields.io/badge/Read-Security%20model-0d1824?style=flat-square"></a>
+</p>
 
 ## Install it yourself
 
@@ -176,13 +223,23 @@ For unattended setup after you already trust the manifest:
 nexus sync --yes
 ```
 
+<p align="center">
+  <a href="#install-it-yourself"><img alt="Manual quickstart" src="https://img.shields.io/badge/Back%20to-Manual%20quickstart-31d0aa?style=flat-square"></a>
+  <a href="docs/demo-transcript.md"><img alt="Demo transcript" src="https://img.shields.io/badge/View-Demo%20transcript-65a7ff?style=flat-square"></a>
+  <a href="docs/security-model.md"><img alt="Security model" src="https://img.shields.io/badge/Check-Security%20model-0d1824?style=flat-square"></a>
+</p>
+
 ## Manage from the dashboard
 
 ```bash
 nexus dashboard
 ```
 
-The dashboard opens a localhost-only UI where you can inspect configured packages, MCPs, skills, target deploy status, and token/cost estimates. It can update the global target policy and run a confirmed deploy through the same `sync` path used by the CLI.
+The dashboard opens a localhost-only UI where you can inspect configured packages, MCPs, skills, target deploy status, and token/cost estimates. From Inventory, you can enable or disable package skills and mark skills as manual-invocation-only; those controls update the manifest and take effect on the next deploy. The dashboard can also update the global target policy and run a confirmed deploy through the same `sync` path used by the CLI.
+
+<p align="center">
+  <img src="docs/assets/dashboard-management.png" alt="Agent Nexus dashboard target policy and platform health view with confirmed deploy controls" width="920">
+</p>
 
 For scripting or troubleshooting without starting the server:
 
@@ -191,6 +248,12 @@ nexus dashboard --json
 ```
 
 Use `--no-open` when you want the server URL without automatically opening a browser.
+
+<p align="center">
+  <a href="docs/demo-transcript.md"><img alt="Dashboard demo proof" src="https://img.shields.io/badge/Dashboard-Demo%20proof-31d0aa?style=flat-square"></a>
+  <a href="docs/screenshot-checklist.md"><img alt="Screenshot checklist" src="https://img.shields.io/badge/Assets-Screenshot%20checklist-65a7ff?style=flat-square"></a>
+  <a href="docs/security-model.md#dashboard-safety"><img alt="Dashboard safety" src="https://img.shields.io/badge/Safety-Dashboard%20writes-0d1824?style=flat-square"></a>
+</p>
 
 ## What You Get
 
@@ -203,10 +266,12 @@ Use `--no-open` when you want the server URL without automatically opening a bro
 | Hooks | Merge managed hooks and deduplicate stale entries without clobbering user-owned hooks. |
 | Target overlays | Add target-specific skill metadata without mutating the package cache. |
 | Security review | See executable MCP commands before Nexus writes them. |
-| Dashboard management | Inspect status, edit the active manifest, dry-run, and deploy from a localhost UI. |
+| Dashboard management | Inspect status, tune package skill policy, update target policy, and deploy from a localhost UI. |
 | Lockfile traceability | Record resolved package snapshots, deployed targets, overlays, and managed MCPs. |
 
 ## Supported Targets
+
+Nexus has **4 core native targets** and **41 skills target presets**. Omitted `targets` use the core four; `targets: ["*"]` opts into every skills preset.
 
 | Target | Skills | MCP servers | Hooks |
 | --- | --- | --- | --- |
@@ -214,6 +279,8 @@ Use `--no-open` when you want the server URL without automatically opening a bro
 | Cursor | `~/.cursor/skills/` | `~/.cursor/mcp.json` | repo `.cursor/hooks.json` |
 | Google Antigravity | `~/.gemini/antigravity/skills/` | `~/.gemini/antigravity/mcp_config.json` | not deployed |
 | Codex | `~/.codex/skills/` | managed block in `~/.codex/config.toml` | `~/.codex/hooks.json` or `$CODEX_HOME/hooks.json` |
+
+Additional skills presets include AdaL, Amp, Augment, Cline, CodeBuddy, Command Code, Continue, Crush, Droid, Gemini CLI, GitHub Copilot, Goose, Hermes Agent, iFlow CLI, Junie, Kilo Code, Kimi Code CLI, Kiro CLI, Kode, MCPJam, Mistral Vibe, Mux, Neovate, OpenClaw, OpenCode, OpenHands, Pi, Pochi, Qoder, Qwen Code, Replit, Roo Code, Trae, Trae CN, Warp, Windsurf, and Zencoder. Their MCP and hook support remains disabled unless the target has a tested native config writer.
 
 Nexus also discovers `commands/*.md` and `agents/*.md` assets and records them in the lockfile. Native command and agent deployment is intentionally tracked separately while the target ecosystems converge.
 
@@ -227,7 +294,7 @@ A Nexus manifest has three core sections.
 
 ### `targets`
 
-Choose where to deploy:
+Choose where to deploy. If `targets` is omitted, Nexus deploys to the four core native targets by default: Claude Code, Cursor, Google Antigravity, and Codex. Use `targets: ["*"]` to deploy skills to all 41 target presets.
 
 ```yaml
 targets:
@@ -369,6 +436,12 @@ Agent Nexus writes to global IDE config, so it is intentionally review-first.
 
 Read the full model in [docs/security-model.md](docs/security-model.md). For exact target support, read [docs/targets.md](docs/targets.md). For MCP merge details, read [docs/mcp.md](docs/mcp.md).
 
+<p align="center">
+  <a href="docs/security-model.md"><img alt="Full security model" src="https://img.shields.io/badge/Trust-Security%20model-31d0aa?style=flat-square"></a>
+  <a href="docs/package-trust.md"><img alt="Package trust" src="https://img.shields.io/badge/Trace-Package%20trust-65a7ff?style=flat-square"></a>
+  <a href="docs/mcp.md"><img alt="MCP merge rules" src="https://img.shields.io/badge/MCP-Merge%20rules-0d1824?style=flat-square"></a>
+</p>
+
 ## Common Workflows
 
 ### Keep a personal agent stack synced
@@ -424,6 +497,7 @@ Context Harness is treated like any other Nexus package: fetched, discovered, de
 - [Screenshot checklist](docs/screenshot-checklist.md)
 - [Security model](docs/security-model.md)
 - [Comparison guide](docs/comparison.md)
+- [GTM strategy](docs/gtm-strategy.md)
 - [Example manifests](examples/)
 
 ## Troubleshooting

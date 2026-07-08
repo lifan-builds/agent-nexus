@@ -4,8 +4,8 @@ kind: plan
 importance: 0.85
 confidence: confirmed
 source: PLAN.md#archive
-chunk: null
-tokens_est: 157
+chunk: .context-harness/chunks/ctx-plan-archive.md
+tokens_est: 1091
 tags: [plan, archive]
 ---
 
@@ -28,3 +28,4 @@ Earlier 2026 work replaced the APM/deploy.sh workflow with Nexus, added cache
 
 ## Open next
 - `PLAN.md#archive`
+- `.context-harness/chunks/ctx-plan-archive.md`

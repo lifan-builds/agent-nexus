@@ -2674,7 +2674,7 @@ body {
   margin: 0;
   min-height: 100dvh;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: var(--bg);
+  background: radial-gradient(circle at top left, rgba(49, 208, 170, .08), transparent 34rem), var(--bg);
   color: var(--text);
 }
 button, textarea, pre, input { font: inherit; }
@@ -2708,13 +2708,18 @@ button:focus-visible, textarea:focus-visible, input:focus-visible, summary:focus
 .safety-chip { display:inline-flex; align-items:center; gap:7px; }
 .safety-chip::before { content:""; width:6px; height:6px; border-radius:999px; background: var(--accent); }
 main { padding: 18px 0 44px; }
-.summary-strip { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; overflow:hidden; border:1px solid var(--border); border-radius: 14px; background: var(--border); }
-.metric { background: var(--panel); padding: 14px; min-height: 88px; }
-.metric .value { font-size: 26px; font-weight: 850; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-.metric .label { margin-top: 4px; color: var(--text-soft); font-size: 13px; font-weight: 760; }
-.metric .detail { margin-top: 4px; color: var(--text-muted); font-size: 12px; line-height: 1.4; }
-.metric.warn .value { color: var(--warn); }
-.metric.good .value { color: var(--good); }
+.overview-grid { display:grid; grid-template-columns: minmax(280px, 1.7fr) repeat(3, minmax(140px, .75fr)); gap: 10px; }
+.readiness-card, .stat-card, .package-card, .health-card { border:1px solid var(--border); border-radius: 16px; background: rgba(11, 21, 32, .92); box-shadow: 0 18px 44px rgba(0,0,0,.16); }
+.readiness-card { padding: 18px; min-height: 142px; display:flex; flex-direction:column; justify-content:space-between; }
+.readiness-label { color: var(--text-muted); font-size: 12px; font-weight: 780; text-transform: uppercase; letter-spacing: .08em; }
+.readiness-title { margin-top: 7px; font-size: 26px; font-weight: 860; letter-spacing: -.035em; }
+.readiness-detail { margin-top: 7px; color: var(--text-soft); font-size: 13px; line-height: 1.5; max-width: 52rem; }
+.readiness-meta { display:flex; flex-wrap:wrap; gap: 8px; margin-top: 14px; }
+.stat-card { padding: 14px; min-height: 142px; }
+.stat-value { font-size: 26px; font-weight: 850; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.stat-label { margin-top: 5px; color: var(--text-soft); font-size: 13px; font-weight: 760; }
+.stat-detail { margin-top: 8px; color: var(--text-muted); font-size: 12px; line-height: 1.45; }
+.tone-good { color: var(--good); } .tone-warn { color: var(--warn); }
 .tabs { display:flex; gap: 4px; margin: 16px 0 10px; border-bottom:1px solid var(--border-soft); }
 .tab { border:0; border-bottom: 2px solid transparent; border-radius: 0; padding: 10px 12px; background: transparent; color: var(--text-muted); }
 .tab strong { font-size: 14px; font-weight: 760; }
@@ -2762,11 +2767,22 @@ pre { overflow:auto; white-space:pre-wrap; background:#06111b; padding:12px; bor
 .empty-state { padding: 14px; border:1px dashed var(--border); border-radius: 12px; color: var(--text-muted); background: rgba(255,255,255,.025); }
 .row-actions { display:flex; flex-wrap:wrap; gap:10px; margin: 12px 0; }
 .small { font-size: 12px; }
-.workflow-list { display:grid; gap: 8px; grid-template-columns: repeat(5, minmax(120px, 1fr)); }
-.workflow-list div { padding:10px; border:1px solid var(--border-soft); border-radius:10px; background:#08121c; }
-.workflow-list strong { display:block; margin-bottom:4px; }
-@media (max-width: 900px) { .topbar { flex-direction:column; } .toolbar { justify-content:flex-start; } .summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } .workflow-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 620px) { .shell { width: min(100% - 20px, 1180px); } header { padding-top: 16px; } .brand { flex-direction:column; } .summary-strip, .workflow-list { grid-template-columns: 1fr; } .tabs { overflow:auto; } .section-head { align-items:flex-start; flex-direction:column; } summary { align-items:flex-start; flex-direction:column; } table { min-width: 620px; } }
+.workflow-list { display:grid; gap: 8px; grid-template-columns: repeat(5, minmax(120px, 1fr)); margin-top: 12px; }
+.workflow-list div { padding:10px; border:1px solid var(--border-soft); border-radius:999px; background: rgba(255,255,255,.025); }
+.workflow-list strong { display:block; margin-bottom:4px; font-size: 12px; }
+.package-grid, .health-grid { display:grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.package-card, .health-card { padding: 14px; }
+.card-top { display:flex; align-items:flex-start; justify-content:space-between; gap: 12px; }
+.card-title { margin:0; font-size: 15px; font-weight: 820; }
+.card-subtitle { margin-top: 4px; color: var(--text-muted); font-size: 12px; word-break: break-word; }
+.card-facts { display:grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; }
+.fact { border:1px solid var(--border-soft); border-radius: 10px; padding: 9px; background: rgba(255,255,255,.025); }
+.fact strong { display:block; font-size: 13px; }
+.fact span { display:block; margin-top: 3px; color: var(--text-muted); font-size: 11px; }
+.target-group { margin-top: 12px; }
+.target-group-title { color: var(--text-soft); font-size: 12px; font-weight: 780; text-transform: uppercase; letter-spacing: .07em; }
+@media (max-width: 900px) { .topbar { flex-direction:column; } .toolbar { justify-content:flex-start; } .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .readiness-card { grid-column: 1 / -1; } .workflow-list, .package-grid, .health-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .shell { width: min(100% - 20px, 1180px); } header { padding-top: 16px; } .brand { flex-direction:column; } .overview-grid, .workflow-list, .package-grid, .health-grid, .card-facts { grid-template-columns: 1fr; } .tabs { overflow:auto; } .section-head { align-items:flex-start; flex-direction:column; } summary { align-items:flex-start; flex-direction:column; } table { min-width: 620px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
@@ -2776,8 +2792,8 @@ pre { overflow:auto; white-space:pre-wrap; background:#06111b; padding:12px; bor
     <div class="brand">
       <div class="mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><path d="M32 9 49 17v13c0 11-7 20-17 25-10-5-17-14-17-25V17l17-8Z" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M22 33h20M32 23v20" stroke="#65a7ff" stroke-width="5" stroke-linecap="round"/></svg></div>
       <div>
-        <h1>Agent Nexus Dashboard</h1>
-        <p class="lede">Manage package skills, targets, and local platform health from one review-first workspace.</p>
+        <h1>Review your agent workspace</h1>
+        <p class="lede">Inspect packages, target health, and deploy readiness before Nexus writes native config.</p>
         <div class="pathline" id="paths">Loading local Nexus state...</div>
         <div class="safety-row" aria-label="Dashboard safety properties">
           <span class="safety-chip">localhost only</span>
@@ -2788,26 +2804,23 @@ pre { overflow:auto; white-space:pre-wrap; background:#06111b; padding:12px; bor
     </div>
     <div class="toolbar">
       <button id="refreshBtn">Refresh state</button>
-      <button class="danger" id="deployBtn" data-endpoint="/api/sync/deploy">Deploy</button>
+      <button class="danger" id="deployBtn" data-endpoint="/api/sync/deploy">Deploy after review</button>
     </div>
   </div>
 </header>
 <main class="shell">
-  <div class="summary-strip" id="summary"></div>
-  <details style="margin-top:12px">
-    <summary><span><strong>Workflow</strong><span class="helper"> Audit, dry run, deploy, doctor, lockfile</span></span></summary>
-    <div class="disclosure-body workflow-list" aria-label="Agent Nexus workflow">
-      <div><strong>Audit</strong><span class="helper">Read local state first.</span></div>
-      <div><strong>Dry run</strong><span class="helper">Preview executable changes.</span></div>
-      <div><strong>Deploy</strong><span class="helper">Sync after confirmation.</span></div>
-      <div><strong>Doctor</strong><span class="helper">Verify target health.</span></div>
-      <div><strong>Lockfile</strong><span class="helper">Trace deployed assets.</span></div>
-    </div>
-  </details>
+  <div class="overview-grid" id="summary"></div>
+  <div class="workflow-list" aria-label="Agent Nexus workflow">
+    <div><strong>Audit</strong><span class="helper">Read local state.</span></div>
+    <div><strong>Dry run</strong><span class="helper">Preview changes.</span></div>
+    <div><strong>Deploy</strong><span class="helper">Confirm sync.</span></div>
+    <div><strong>Doctor</strong><span class="helper">Verify health.</span></div>
+    <div><strong>Lockfile</strong><span class="helper">Trace assets.</span></div>
+  </div>
   <div class="tabs" role="tablist" aria-label="Dashboard views">
-    <button class="tab active" data-tab="inventory" role="tab"><strong>Inventory</strong></button>
-    <button class="tab" data-tab="manage" role="tab"><strong>Targets</strong></button>
-    <button class="tab" data-tab="status" role="tab"><strong>Platforms</strong></button>
+    <button class="tab active" data-tab="inventory" role="tab" aria-selected="true"><strong>Packages</strong></button>
+    <button class="tab" data-tab="manage" role="tab" aria-selected="false"><strong>Targets</strong></button>
+    <button class="tab" data-tab="status" role="tab" aria-selected="false"><strong>Health</strong></button>
   </div>
   <section id="inventory" class="active"></section>
   <section id="manage"></section>
@@ -2830,8 +2843,11 @@ function statusPill(status) {
 function tokenMeter(value, max, label='token estimate') {
   return `<span class="token-meter" aria-label="${esc(label)}: ${esc(value)} tokens"><span class="mono">${esc(formatNumber(value))}</span><span>tokens</span></span>`;
 }
-function metricCard({label, value, detail, tone=''}) {
-  return `<div class="metric ${esc(tone)}"><div class="value">${esc(formatNumber(value))}</div><div class="label">${esc(label)}</div><div class="detail">${esc(detail || '')}</div></div>`;
+function statCard({label, value, detail}) {
+  return `<div class="stat-card"><div class="stat-value">${esc(formatNumber(value))}</div><div class="stat-label">${esc(label)}</div><div class="stat-detail">${esc(detail || '')}</div></div>`;
+}
+function compactPill(label, tone='') {
+  return `<span class="pill ${esc(tone)}">${esc(label)}</span>`;
 }
 function emptyRow(headersLength, message) {
   return `<tr><td colspan="${headersLength}"><div class="empty-state">${esc(message)}</div></td></tr>`;
@@ -2855,21 +2871,35 @@ async function refresh() {
   renderSummary(); renderInventory(); renderManage(); renderStatus();
 }
 function renderSummary() {
-  const warningTone = state.summary.warnings ? 'warn' : 'good';
+  const warningCount = state.summary.warnings || 0;
+  const ready = warningCount === 0;
+  const title = ready ? 'Ready for review' : `${formatNumber(warningCount)} warning${warningCount === 1 ? '' : 's'} to review`;
+  const detail = ready ? 'No dashboard warnings are reported. Review the dry run before deploying changes.' : 'Resolve or acknowledge the warnings before running a confirmed deploy.';
+  const meta = [
+    compactPill(ready ? 'No warnings' : 'Review before deploy', ready ? 'healthy' : 'warning'),
+    compactPill(`Manifest ${fileName(state.meta.manifest_path)}`),
+    compactPill(`Lockfile ${fileName(state.meta.lockfile_path)}`)
+  ];
+  const readiness = `<div class="readiness-card"><div><div class="readiness-label">Deploy readiness</div><div class="readiness-title ${ready ? 'tone-good' : 'tone-warn'}">${esc(title)}</div><div class="readiness-detail">${esc(detail)}</div></div><div class="readiness-meta">${meta.join('')}</div></div>`;
   const rows = [
     {label:'Targets', value: state.summary.targets, detail:'selected destinations'},
     {label:'Packages', value: state.summary.packages, detail:'declared or lockfile-traced'},
-    {label:'Skills', value: state.summary.available_package_skills || state.summary.skills, detail:`${formatNumber(state.summary.disabled_package_skills || 0)} disabled · ${formatNumber(state.summary.manual_only_package_skills || 0)} manual only`},
-    {label:'Warnings', value: state.summary.warnings, detail:'review before deploy', tone: warningTone}
+    {label:'Skills', value: state.summary.available_package_skills || state.summary.skills, detail:`${formatNumber(state.summary.disabled_package_skills || 0)} disabled · ${formatNumber(state.summary.manual_only_package_skills || 0)} manual only`}
   ];
-  document.getElementById('summary').innerHTML = rows.map(metricCard).join('');
+  document.getElementById('summary').innerHTML = readiness + rows.map(statCard).join('');
 }
 function renderInventory() {
   const packages = state.packages.map(p => `<tr><td class="name-cell">${esc(p.name)}</td><td>${esc(p.repo || p.path || '')}</td><td>${esc(p.uses_global_targets ? 'Global targets' : (p.deploy_targets || []).join(', '))}</td><td>${esc((p.skill_inventory || []).length)} available / ${esc(((p.discovered||{}).skills||[]).length)} deployed</td><td>${esc((p.deployed_to || []).join(', ') || 'not deployed')}</td></tr>`);
+  const packageCards = (state.packages || []).map(p => {
+    const policy = p.skill_policy || {};
+    const source = p.repo || p.path || 'manifest package';
+    const targetPolicy = p.uses_global_targets ? 'Global targets' : ((p.deploy_targets || []).join(', ') || 'package filter');
+    return `<article class="package-card"><div class="card-top"><div><h3 class="card-title">${esc(p.name)}</h3><div class="card-subtitle">${esc(source)}</div></div>${compactPill(targetPolicy)}</div><div class="card-facts"><div class="fact"><strong>${esc((p.skill_inventory || []).length)}</strong><span>available skills</span></div><div class="fact"><strong>${esc(policy.disabled_count || 0)}</strong><span>disabled</span></div><div class="fact"><strong>${esc(policy.manual_only_count || 0)}</strong><span>manual only</span></div></div><div class="card-subtitle" style="margin-top:12px">Deployed to ${esc((p.deployed_to || []).join(', ') || 'no targets yet')}</div></article>`;
+  }).join('') || '<div class="empty-state">No packages configured yet. Add a package to your Nexus manifest, then run sync.</div>';
   const skills = state.skills.map(s => `<tr><td class="name-cell">${esc(s.name)}</td><td>${esc(s.package)}</td><td>${esc(s.implicit_invocation ? 'Implicit' : 'Manual only')}</td><td>${esc((s.deployed_to || []).join(', ') || 'not deployed')}</td><td>${tokenMeter(s.static_tokens, 1, `${s.name} token estimate`)}</td></tr>`);
   const mcps = state.mcps.map(m => `<tr><td class="name-cell">${esc(m.name)}</td><td>${esc(m.optional ? 'Optional' : 'Required')}</td><td>${esc(m.transport || (m.url ? 'http/sse' : 'stdio'))}</td><td>${esc(m.command || m.url || '')}</td><td>${tokenMeter(m.static_tokens, 1, `${m.name} token estimate`)}</td></tr>`);
   const controls = (state.packages || []).map(renderPackageSkillControls).join('') || '<div class="empty-state">No package skills are available to edit yet. Run sync after adding a package.</div>';
-  document.getElementById('inventory').innerHTML = `${sectionIntro('Inventory', 'Start with packages. Expand a package only when you need to change skill policy.')}${warningsHtml()}<div class="panel"><h3>Packages</h3>${table(['Name','Source','Target policy','Skills','Deployed to'], packages, 'No packages configured yet. Add a package to your Nexus manifest, then run sync.')}</div><h3>Package skill controls</h3><div class="notice">Saving skill controls updates the manifest only. Run Deploy or <span class="mono">nexus sync</span> to apply target filesystem changes.</div>${controls}<details><summary><span><strong>Currently deployed skills</strong><span class="helper"> ${esc(formatNumber(state.skills.length))} rows</span></span></summary><div class="disclosure-body">${table(['Skill','Package','Invocation','Deployed to','Tokens'], skills, 'No skills deployed yet. Run sync after adding a package with skills.')}</div></details><details><summary><span><strong>MCP servers</strong><span class="helper"> ${esc(formatNumber(state.mcps.length))} declared</span></span></summary><div class="disclosure-body">${table(['Name','Kind','Transport','Command or URL','Tokens'], mcps, 'No MCP servers declared yet. Add an MCP entry to your manifest to manage it across targets.')}</div></details>`;
+  document.getElementById('inventory').innerHTML = `${sectionIntro('Packages', 'Start with package readiness. Expand controls only when you need to change skill policy.')}${warningsHtml()}<div class="package-grid">${packageCards}</div><details><summary><span><strong>Package table</strong><span class="helper"> source, targets, and deployment rows</span></span></summary><div class="disclosure-body">${table(['Name','Source','Target policy','Skills','Deployed to'], packages, 'No packages configured yet. Add a package to your Nexus manifest, then run sync.')}</div></details><h3>Package skill controls</h3><div class="notice">Saving skill controls updates the manifest only. Run Deploy after review or <span class="mono">nexus sync</span> to apply target filesystem changes.</div>${controls}<details><summary><span><strong>Currently deployed skills</strong><span class="helper"> ${esc(formatNumber(state.skills.length))} rows</span></span></summary><div class="disclosure-body">${table(['Skill','Package','Invocation','Deployed to','Tokens'], skills, 'No skills deployed yet. Run sync after adding a package with skills.')}</div></details><details><summary><span><strong>MCP servers</strong><span class="helper"> ${esc(formatNumber(state.mcps.length))} declared</span></span></summary><div class="disclosure-body">${table(['Name','Kind','Transport','Command or URL','Tokens'], mcps, 'No MCP servers declared yet. Add an MCP entry to your manifest to manage it across targets.')}</div></details>`;
 }
 function renderPackageSkillControls(pkg) {
   const policy = pkg.skill_policy || {};
@@ -2897,8 +2927,13 @@ function warningsHtml() {
 }
 function renderManage() {
   const selected = new Set(state.deployment.global_targets || []);
-  const chips = (state.deployment.available_targets || []).map(target => `<label class="target-chip"><input type="checkbox" data-target="${esc(target)}" ${selected.has(target) ? 'checked' : ''}>${esc(target)}</label>`).join('');
-  document.getElementById('manage').innerHTML = `${sectionIntro('Targets', 'Choose where packages deploy by default. Package-level target filters still apply.')}<div class="panel"><div class="notice">Saving updates only the manifest target policy; raw secrets stay out of the dashboard. Deploy remains gated: <strong>Type deploy</strong> when prompted to run sync.</div><div class="target-grid" id="targetGrid">${chips}</div><div class="row-actions"><button class="primary" id="saveTargetsBtn">Save target policy</button></div><pre id="targetResult">Current targets: ${esc((state.deployment.global_targets || []).join(', ') || 'none selected')}</pre></div>`;
+  const core = ['claude', 'cursor', 'antigravity', 'codex'];
+  const available = state.deployment.available_targets || [];
+  const chip = target => `<label class="target-chip"><input type="checkbox" data-target="${esc(target)}" ${selected.has(target) ? 'checked' : ''}>${esc(target)}</label>`;
+  const coreChips = available.filter(target => core.includes(target)).map(chip).join('');
+  const extraChips = available.filter(target => !core.includes(target)).map(chip).join('');
+  const extras = extraChips ? `<details><summary><span><strong>Additional skill presets</strong><span class="helper"> optional skill-only targets</span></span></summary><div class="disclosure-body"><div class="target-grid">${extraChips}</div></div></details>` : '';
+  document.getElementById('manage').innerHTML = `${sectionIntro('Targets', 'Choose default deploy targets. Package-level filters can narrow this per package.')}<div class="panel"><div class="notice">Saving updates only the manifest target policy; raw secrets stay out of the dashboard. Deploy remains gated: <strong>Type deploy</strong> when prompted to run sync.</div><div id="targetGrid"><div class="target-group"><div class="target-group-title">Core native targets</div><div class="target-grid">${coreChips || '<span class="helper">No core targets available.</span>'}</div></div>${extras}</div><div class="row-actions"><button class="primary" id="saveTargetsBtn">Save target policy</button></div><pre id="targetResult">Current targets: ${esc((state.deployment.global_targets || []).join(', ') || 'none selected')}</pre></div>`;
   document.getElementById('saveTargetsBtn').onclick = saveTargets;
 }
 async function saveTargets() {
@@ -2909,15 +2944,22 @@ async function saveTargets() {
 }
 function renderStatus() {
   const rows = state.targets.map(t => `<tr><td class="name-cell">${esc(t.name)}</td><td>${statusPill(t.status)}</td><td>${esc(t.skill_path || '')}</td><td>${esc(t.skills.symlinks)} links / ${esc(t.skills.broken)} broken</td><td>${statusPill(t.mcp.status)} ${esc(t.mcp.server_count)} servers</td><td>${esc(t.hooks ? `${t.hooks.count} entries (${t.hooks.status})` : 'n/a')}</td></tr>`);
+  const cards = state.targets.map(t => `<article class="health-card"><div class="card-top"><div><h3 class="card-title">${esc(t.name)}</h3><div class="card-subtitle">${esc(fileName(t.skill_path || 'skill path missing'))}</div></div>${statusPill(t.status)}</div><div class="card-facts"><div class="fact"><strong>${esc(t.skills.symlinks)}</strong><span>skill links</span></div><div class="fact"><strong>${esc(t.mcp.server_count)}</strong><span>MCP servers</span></div><div class="fact"><strong>${esc(t.hooks ? t.hooks.count : 'n/a')}</strong><span>hooks</span></div></div><div class="card-subtitle" style="margin-top:12px">Skills: ${esc(t.skills.broken)} broken · MCP: ${esc(t.mcp.status)}${t.hooks ? ` · Hooks: ${esc(t.hooks.status)}` : ''}</div></article>`).join('') || '<div class="empty-state">No target checks are available yet.</div>';
   const counts = state.targets.reduce((acc, target) => { acc[target.status] = (acc[target.status] || 0) + 1; return acc; }, {});
-  document.getElementById('status').innerHTML = `${sectionIntro('Platforms', 'Live local deployment checks for skill links, MCP config, and hooks.')}<div class="helper" style="margin-bottom:10px">${esc(formatNumber(counts.healthy || 0))} healthy · ${esc(formatNumber(counts.warning || 0))} warning · ${esc(formatNumber((counts.invalid || 0) + (counts.missing || 0)))} missing or invalid</div>${table(['Target','Status','Skill path','Skills','MCP config','Hooks'], rows, 'No target checks are available yet.')}`;
+  document.getElementById('status').innerHTML = `${sectionIntro('Health', 'Live local checks for skill links, MCP config, and hooks without making paths the focus.')}<div class="helper" style="margin-bottom:10px">${esc(formatNumber(counts.healthy || 0))} healthy · ${esc(formatNumber(counts.warning || 0))} warning · ${esc(formatNumber((counts.invalid || 0) + (counts.missing || 0)))} missing or invalid</div><div class="health-grid">${cards}</div><details><summary><span><strong>Detailed platform table</strong><span class="helper"> paths and raw status rows</span></span></summary><div class="disclosure-body">${table(['Target','Status','Skill path','Skills','MCP config','Hooks'], rows, 'No target checks are available yet.')}</div></details>`;
 }
 async function syncAction(action, confirmText='') {
   const result = await api(`/api/sync/${action}`, {method:'POST', body: JSON.stringify({confirm: confirmText})}).catch(e => ({ok:false, error:e.message}));
   if (!result.ok) alert(result.error || 'Deploy failed.');
   await refresh();
 }
-document.querySelectorAll('.tab').forEach(btn => btn.onclick = () => { document.querySelectorAll('.tab, section').forEach(el => el.classList.remove('active')); btn.classList.add('active'); document.getElementById(btn.dataset.tab).classList.add('active'); });
+document.querySelectorAll('.tab').forEach(btn => btn.onclick = () => {
+  document.querySelectorAll('.tab').forEach(tab => { tab.classList.remove('active'); tab.setAttribute('aria-selected', 'false'); });
+  document.querySelectorAll('section').forEach(el => el.classList.remove('active'));
+  btn.classList.add('active');
+  btn.setAttribute('aria-selected', 'true');
+  document.getElementById(btn.dataset.tab).classList.add('active');
+});
 document.addEventListener('click', event => { if (event.target.matches('[data-save-package]')) savePackageSkillPolicy(event.target.dataset.savePackage); });
 document.getElementById('refreshBtn').onclick = refresh;
 document.getElementById('deployBtn').onclick = () => { const c = prompt('Type deploy to run nexus sync.'); if (c) syncAction('deploy', c); };

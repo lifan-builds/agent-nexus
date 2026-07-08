@@ -1330,6 +1330,7 @@ def test_dashboard_html_includes_safety_and_api_hooks():
     assert "/api/state" in html
     assert "/api/sync/deploy" in html
     assert "/api/packages/skills/save" in html
+    assert "data-sync-action=\"dry-run\"" in html
     assert "Type deploy" in html
     assert "Manual only" in html
     assert "localhost only" in html
@@ -1404,6 +1405,16 @@ def test_cmd_dashboard_json_outputs_valid_json(tmp_path, capsys):
     captured = capsys.readouterr()
     data = json.loads(captured.out)
     assert data["meta"]["nexus_version"] == nexus.NEXUS_VERSION
+
+
+def test_dashboard_dry_run_does_not_require_confirmation(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.data = {"packages": [], "mcps": [], "targets": ["codex"]}
+
+    result = nexus.run_dashboard_sync_action(cfg, "dry-run", {})
+
+    assert result["ok"] is True
+    assert "Dry run" in result["stderr"]
 
 
 def test_dashboard_deploy_requires_confirmation(tmp_path):

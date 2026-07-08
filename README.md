@@ -173,9 +173,10 @@ nexus sync --yes
 nexus dashboard
 ```
 
-The dashboard is a localhost-only review surface for the same workflow as the CLI:
+The dashboard is a localhost-only review console for the same workflow as the CLI:
 
-- Inspect packages, skills, MCP servers, target health, and lockfile state.
+- Start with deploy readiness and the next safe step: preview the dry-run review.
+- Inspect package source, discovered assets, skill policy, MCP servers, target health, and lockfile state.
 - Tune package skill policy and global target policy in the manifest.
 - Run deploy only after the dashboard asks you to type `deploy`.
 

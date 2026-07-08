@@ -2625,6 +2625,8 @@ def _capture_sync(cfg: Config, args: SimpleNamespace) -> dict:
 
 def run_dashboard_sync_action(cfg: Config, action: str, payload: dict | None = None) -> dict:
     payload = payload or {}
+    if action == "dry-run":
+        return _capture_sync(cfg, SimpleNamespace(all=False, dry_run=True, yes=False))
     if action == "deploy":
         if payload.get("confirm") != "deploy":
             return {"ok": False, "error": "Type deploy to confirm."}
@@ -2715,6 +2717,9 @@ main { padding: 18px 0 44px; }
 .readiness-title { margin-top: 7px; font-size: 26px; font-weight: 860; letter-spacing: -.035em; }
 .readiness-detail { margin-top: 7px; color: var(--text-soft); font-size: 13px; line-height: 1.5; max-width: 52rem; }
 .readiness-meta { display:flex; flex-wrap:wrap; gap: 8px; margin-top: 14px; }
+.next-step { display:flex; align-items:center; justify-content:space-between; gap: 12px; margin-top: 14px; padding: 10px; border:1px solid var(--border-soft); border-radius: 12px; background: rgba(255,255,255,.025); }
+.next-step strong { display:block; font-size: 13px; }
+.next-step span { display:block; margin-top: 3px; color: var(--text-muted); font-size: 12px; }
 .stat-card { padding: 14px; min-height: 142px; }
 .stat-value { font-size: 26px; font-weight: 850; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .stat-label { margin-top: 5px; color: var(--text-soft); font-size: 13px; font-weight: 760; }
@@ -2763,6 +2768,7 @@ details[open] > summary::after { content:"Close"; }
 textarea { width:100%; min-height: 420px; resize: vertical; border:1px solid var(--border); border-radius:12px; padding:14px; background: #06111b; color: var(--code); font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 pre { overflow:auto; white-space:pre-wrap; background:#06111b; padding:12px; border-radius:10px; border:1px solid var(--border-soft); color: var(--code); font-size:12px; }
 .notice { padding: 11px 13px; background: rgba(49, 208, 170, .08); border:1px solid rgba(49, 208, 170, .22); border-radius: 12px; margin-bottom: 12px; color:#dffbf5; font-size:13px; line-height:1.45; }
+.sync-result { margin-top: 12px; }
 .notice.warn { background: rgba(255, 209, 102, .09); border-color: rgba(255, 209, 102, .26); color: #fff1ca; }
 .empty-state { padding: 14px; border:1px dashed var(--border); border-radius: 12px; color: var(--text-muted); background: rgba(255,255,255,.025); }
 .row-actions { display:flex; flex-wrap:wrap; gap:10px; margin: 12px 0; }
@@ -2775,10 +2781,12 @@ pre { overflow:auto; white-space:pre-wrap; background:#06111b; padding:12px; bor
 .card-top { display:flex; align-items:flex-start; justify-content:space-between; gap: 12px; }
 .card-title { margin:0; font-size: 15px; font-weight: 820; }
 .card-subtitle { margin-top: 4px; color: var(--text-muted); font-size: 12px; word-break: break-word; }
-.card-facts { display:grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; }
+.card-facts { display:grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; }
 .fact { border:1px solid var(--border-soft); border-radius: 10px; padding: 9px; background: rgba(255,255,255,.025); }
 .fact strong { display:block; font-size: 13px; }
 .fact span { display:block; margin-top: 3px; color: var(--text-muted); font-size: 11px; }
+.asset-row { display:flex; flex-wrap:wrap; gap: 6px; margin-top: 12px; }
+.asset-chip { display:inline-flex; align-items:center; gap: 5px; border:1px solid var(--border-soft); border-radius: 999px; padding: 4px 7px; color: var(--text-soft); background: rgba(255,255,255,.025); font-size: 11px; font-weight: 720; }
 .target-group { margin-top: 12px; }
 .target-group-title { color: var(--text-soft); font-size: 12px; font-weight: 780; text-transform: uppercase; letter-spacing: .07em; }
 @media (max-width: 900px) { .topbar { flex-direction:column; } .toolbar { justify-content:flex-start; } .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .readiness-card { grid-column: 1 / -1; } .workflow-list, .package-grid, .health-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -2817,6 +2825,10 @@ pre { overflow:auto; white-space:pre-wrap; background:#06111b; padding:12px; bor
     <div><strong>Doctor</strong><span class="helper">Verify health.</span></div>
     <div><strong>Lockfile</strong><span class="helper">Trace assets.</span></div>
   </div>
+  <details class="sync-result" id="syncResultPanel">
+    <summary><span><strong>Latest dashboard action</strong><span class="helper"> dry-run and deploy output</span></span></summary>
+    <div class="disclosure-body"><pre id="syncResult">No dashboard action has run yet.</pre></div>
+  </details>
   <div class="tabs" role="tablist" aria-label="Dashboard views">
     <button class="tab active" data-tab="inventory" role="tab" aria-selected="true"><strong>Packages</strong></button>
     <button class="tab" data-tab="manage" role="tab" aria-selected="false"><strong>Targets</strong></button>
@@ -2858,6 +2870,9 @@ function sectionIntro(title, subtitle) {
 function table(headers, rows, emptyMessage='No rows yet.') {
   return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('') || emptyRow(headers.length, emptyMessage)}</tbody></table></div>`;
 }
+function cleanActionOutput(value) {
+  return String(value || '').replace(/\x1b\[[0-9;]*m/g, '').replace(/\/Users\/[^\s\/"]+/g, '~').replace(/\/home\/[^\s\/"]+/g, '~');
+}
 async function api(path, options={}) {
   const res = await fetch(path, {headers:{'Content-Type':'application/json'}, ...options});
   const text = await res.text();
@@ -2880,7 +2895,8 @@ function renderSummary() {
     compactPill(`Manifest ${fileName(state.meta.manifest_path)}`),
     compactPill(`Lockfile ${fileName(state.meta.lockfile_path)}`)
   ];
-  const readiness = `<div class="readiness-card"><div><div class="readiness-label">Deploy readiness</div><div class="readiness-title ${ready ? 'tone-good' : 'tone-warn'}">${esc(title)}</div><div class="readiness-detail">${esc(detail)}</div></div><div class="readiness-meta">${meta.join('')}</div></div>`;
+  const nextStep = `<div class="next-step"><div><strong>Next safe step</strong><span>Run the dry-run review before any deploy.</span></div><button class="primary" data-sync-action="dry-run">Preview dry run</button></div>`;
+  const readiness = `<div class="readiness-card"><div><div class="readiness-label">Deploy readiness</div><div class="readiness-title ${ready ? 'tone-good' : 'tone-warn'}">${esc(title)}</div><div class="readiness-detail">${esc(detail)}</div></div><div><div class="readiness-meta">${meta.join('')}</div>${nextStep}</div></div>`;
   const rows = [
     {label:'Targets', value: state.summary.targets, detail:'selected destinations'},
     {label:'Packages', value: state.summary.packages, detail:'declared or lockfile-traced'},
@@ -2893,8 +2909,21 @@ function renderInventory() {
   const packageCards = (state.packages || []).map(p => {
     const policy = p.skill_policy || {};
     const source = p.repo || p.path || 'manifest package';
+    const sourceType = p.repo ? 'GitHub package' : (p.path ? 'Local package' : 'Lockfile package');
     const targetPolicy = p.uses_global_targets ? 'Global targets' : ((p.deploy_targets || []).join(', ') || 'package filter');
-    return `<article class="package-card"><div class="card-top"><div><h3 class="card-title">${esc(p.name)}</h3><div class="card-subtitle">${esc(source)}</div></div>${compactPill(targetPolicy)}</div><div class="card-facts"><div class="fact"><strong>${esc((p.skill_inventory || []).length)}</strong><span>available skills</span></div><div class="fact"><strong>${esc(policy.disabled_count || 0)}</strong><span>disabled</span></div><div class="fact"><strong>${esc(policy.manual_only_count || 0)}</strong><span>manual only</span></div></div><div class="card-subtitle" style="margin-top:12px">Deployed to ${esc((p.deployed_to || []).join(', ') || 'no targets yet')}</div></article>`;
+    const discovered = p.discovered || {};
+    const commandCount = (discovered.commands || []).length;
+    const agentCount = (discovered.agents || []).length;
+    const overlayCount = (p.overlays || []).length;
+    const hookCount = (p.hooks || []).length;
+    const assets = [
+      `${(p.skill_inventory || []).length} skills`,
+      `${commandCount} commands`,
+      `${agentCount} agents`,
+      `${hookCount} hook targets`,
+      `${overlayCount} overlays`
+    ].map(label => `<span class="asset-chip">${esc(label)}</span>`).join('');
+    return `<article class="package-card"><div class="card-top"><div><h3 class="card-title">${esc(p.name)}</h3><div class="card-subtitle">${esc(source)}</div></div><div>${compactPill(sourceType)} ${compactPill(targetPolicy)}</div></div><div class="asset-row">${assets}</div><div class="card-facts"><div class="fact"><strong>${esc(policy.enabled_count || 0)}</strong><span>enabled</span></div><div class="fact"><strong>${esc(policy.disabled_count || 0)}</strong><span>disabled</span></div><div class="fact"><strong>${esc(policy.manual_only_count || 0)}</strong><span>manual only</span></div><div class="fact"><strong>${esc((p.deployed_to || []).length)}</strong><span>targets</span></div></div><div class="card-subtitle" style="margin-top:12px">Deployed to ${esc((p.deployed_to || []).join(', ') || 'no targets yet')}</div></article>`;
   }).join('') || '<div class="empty-state">No packages configured yet. Add a package to your Nexus manifest, then run sync.</div>';
   const skills = state.skills.map(s => `<tr><td class="name-cell">${esc(s.name)}</td><td>${esc(s.package)}</td><td>${esc(s.implicit_invocation ? 'Implicit' : 'Manual only')}</td><td>${esc((s.deployed_to || []).join(', ') || 'not deployed')}</td><td>${tokenMeter(s.static_tokens, 1, `${s.name} token estimate`)}</td></tr>`);
   const mcps = state.mcps.map(m => `<tr><td class="name-cell">${esc(m.name)}</td><td>${esc(m.optional ? 'Optional' : 'Required')}</td><td>${esc(m.transport || (m.url ? 'http/sse' : 'stdio'))}</td><td>${esc(m.command || m.url || '')}</td><td>${tokenMeter(m.static_tokens, 1, `${m.name} token estimate`)}</td></tr>`);
@@ -2950,7 +2979,10 @@ function renderStatus() {
 }
 async function syncAction(action, confirmText='') {
   const result = await api(`/api/sync/${action}`, {method:'POST', body: JSON.stringify({confirm: confirmText})}).catch(e => ({ok:false, error:e.message}));
-  if (!result.ok) alert(result.error || 'Deploy failed.');
+  const output = [result.stderr, result.stdout, result.error].filter(Boolean).join('\n').trim() || JSON.stringify(result, null, 2);
+  document.getElementById('syncResult').textContent = cleanActionOutput(output);
+  document.getElementById('syncResultPanel').open = true;
+  if (!result.ok) alert(result.error || 'Dashboard action failed.');
   await refresh();
 }
 document.querySelectorAll('.tab').forEach(btn => btn.onclick = () => {
@@ -2960,7 +2992,10 @@ document.querySelectorAll('.tab').forEach(btn => btn.onclick = () => {
   btn.setAttribute('aria-selected', 'true');
   document.getElementById(btn.dataset.tab).classList.add('active');
 });
-document.addEventListener('click', event => { if (event.target.matches('[data-save-package]')) savePackageSkillPolicy(event.target.dataset.savePackage); });
+document.addEventListener('click', event => {
+  if (event.target.matches('[data-save-package]')) savePackageSkillPolicy(event.target.dataset.savePackage);
+  if (event.target.matches('[data-sync-action]')) syncAction(event.target.dataset.syncAction);
+});
 document.getElementById('refreshBtn').onclick = refresh;
 document.getElementById('deployBtn').onclick = () => { const c = prompt('Type deploy to run nexus sync.'); if (c) syncAction('deploy', c); };
 refresh().catch(e => document.body.insertAdjacentHTML('afterbegin', `<pre>${esc(e.stack || e.message)}</pre>`));
@@ -3002,6 +3037,10 @@ def make_dashboard_handler(repo_dir: Path):
                     result = update_manifest_package_skill_policy(self._cfg(), payload)
                     self._refresh_cfg()
                     _json_response(self, 200, result)
+                elif self.path == "/api/sync/dry-run":
+                    result = run_dashboard_sync_action(self._refresh_cfg(), "dry-run", payload)
+                    self._refresh_cfg()
+                    _json_response(self, 200 if result.get("ok") else 400, result)
                 elif self.path == "/api/sync/deploy":
                     result = run_dashboard_sync_action(self._refresh_cfg(), "deploy", payload)
                     self._refresh_cfg()

@@ -32,7 +32,7 @@ TARGET_REGISTRY = {
     "claude": {
         "display": "Claude Code",
         "skills": Path.home() / ".claude" / "skills",
-        "mcp": Path.home() / ".claude" / ".mcp.json",
+        "mcp": Path.home() / ".claude.json",
         "mcp_format": "mcp_servers_json",
         "default": True,
         "status": {"skills": "implemented", "mcp": "implemented", "hooks": "implemented"},

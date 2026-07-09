@@ -66,7 +66,7 @@ Headers are copied into supported target config shapes. Treat header values as s
 
 ### Claude Code
 
-Path: `~/.claude/.mcp.json`
+Path: `~/.claude.json`
 
 Stdio output shape:
 
@@ -149,7 +149,7 @@ For JSON targets, Nexus:
 - adds manifest-managed MCP servers,
 - updates managed command, args, URL, type, headers, and OAuth resource fields,
 - preserves unmanaged MCP servers not declared in the manifest,
-- preserves local-only keys on an existing server entry,
+- preserves local-only top-level Claude Code state and keys on existing server entries,
 - preserves local env values when the manifest uses placeholders,
 - preserves local-only env keys not mentioned by the manifest.
 

@@ -270,7 +270,7 @@ mcps:
     description: GitHub API access
 ```
 
-Skipped optional MCPs are not written to the lockfile as managed MCPs, so a later sync will not prune a server that Nexus never accepted for deployment.
+Skipped optional MCPs are not written to the lockfile as managed MCPs, so Nexus will not prune a server that it never accepted for deployment. If an optional MCP was managed by the previous lockfile and is skipped on the next sync, Nexus treats it as stale and prunes it from target configs.
 
 ## Examples
 
@@ -285,9 +285,14 @@ packages:
     ref: main
     hooks: [codex]
 mcps:
+  - name: context7
+    command: npx
+    args: ["-y", "@upstash/context7-mcp@latest"]
+optional_mcps:
   - name: playwright
     command: npx
     args: ["-y", "@playwright/mcp@latest"]
+    description: Isolated, reproducible browser automation; enable only when needed
 ```
 
 ### Team setup

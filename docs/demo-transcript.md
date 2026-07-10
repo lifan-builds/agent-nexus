@@ -52,12 +52,12 @@ checked-in example.
 ```bash
 $ python nexus.py sync --dry-run
 ==> Resolving optional MCPs...
+  ? Include optional MCP 'playwright' - Isolated, reproducible browser automation? [y/N] n
 ==> Fetching packages...
   + context-harness (local or fetched)
 ==> Security review - MCP servers to be registered:
 
     sequential-thinking            stdio: npx -y @modelcontextprotocol/server-sequential-thinking
-    playwright                     stdio: npx -y @playwright/mcp@latest
     context7                       stdio: npx -y @upstash/context7-mcp@latest
 
 ==> Dry run - no target configs or lockfiles written.
@@ -85,6 +85,7 @@ that will be installed.
 ```bash
 $ python nexus.py sync
 ==> Resolving optional MCPs...
+  ? Include optional MCP 'playwright' - Isolated, reproducible browser automation? [y/N] n
 ==> Fetching packages...
 ==> Security review - MCP servers to be registered:
 ...
@@ -101,14 +102,13 @@ $ python nexus.py sync
   + Codex hooks: merged 3 entries into ~/.codex/hooks.json
 ==> Syncing MCP servers...
   + sequential-thinking (added)
-  + playwright (added)
   + context7 (added)
 ==> Generating lockfile...
   + nexus.personal.lock.yml written
 
 ==> Sync complete!
   6 skills processed; deployed counts: claude=6, cursor=6, antigravity=6, codex=6
-  MCP servers synced to: ~/.claude/.mcp.json, ~/.cursor/mcp.json, ~/.gemini/antigravity/mcp_config.json, ~/.codex/config.toml
+  MCP servers synced to: ~/.claude.json, ~/.cursor/mcp.json, ~/.gemini/antigravity/mcp_config.json, ~/.codex/config.toml
 ```
 
 ## 5. MCP Merge Behavior
@@ -188,7 +188,6 @@ packages:
 mcps:
   managed:
     - name: sequential-thinking
-    - name: playwright
     - name: context7
 ```
 
@@ -207,10 +206,10 @@ $ python nexus.py doctor
   + cursor skills: 6 symlinks
   + antigravity skills: 6 symlinks
   + codex skills: 6 symlinks
-  + claude MCP config: 3 servers (~/.claude/.mcp.json)
-  + cursor MCP config: 3 servers (~/.cursor/mcp.json)
-  + antigravity MCP config: 3 servers (~/.gemini/antigravity/mcp_config.json)
-  + codex MCP config: 3 servers (~/.codex/config.toml)
+  + claude MCP config: 2 servers (~/.claude.json)
+  + cursor MCP config: 2 servers (~/.cursor/mcp.json)
+  + antigravity MCP config: 2 servers (~/.gemini/antigravity/mcp_config.json)
+  + codex MCP config: 2 servers (~/.codex/config.toml)
   + Codex hooks: 3 entries (~/.codex/hooks.json)
 ```
 
@@ -229,7 +228,7 @@ $ python nexus.py dashboard --json
     "targets": 4,
     "packages": 1,
     "skills": 6,
-    "managed_mcps": 3
+    "managed_mcps": 2
   }
 }
 ```

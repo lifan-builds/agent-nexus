@@ -62,6 +62,16 @@ mcps:
 
 Headers are copied into supported target config shapes. Treat header values as sensitive if they contain tokens.
 
+## Browser Tooling Policy
+
+Use one browser path for each job instead of enabling overlapping tools by default:
+
+- **Kimi WebBridge** should be deployed as a package-managed skill for explicitly requested interaction with the user's real browser, open tabs, and existing login sessions. Apply manual-only skill metadata for this privileged path.
+- **Playwright MCP** belongs under `optional_mcps` for isolated, reproducible browser automation and end-to-end testing.
+- **Chrome DevTools MCP** is not a default Nexus-managed server. Keep it target-local and install it only for focused Lighthouse, performance trace, Core Web Vitals, or heap diagnostics.
+
+When Playwright was managed by a previous sync and is declined later, it is omitted from the accepted MCP set and pruned using the previous lockfile.
+
 ## Per-Target Output Formats
 
 ### Claude Code
@@ -168,7 +178,7 @@ Nexus treats MCPs listed in the active manifest and accepted optional MCPs as ma
 
 Unmanaged entries are existing target config entries not listed in the manifest or lockfile-managed set. Nexus preserves them during normal sync.
 
-Skipped optional MCPs are not recorded as managed, so a later sync will not prune a server that was never accepted for deployment.
+Skipped optional MCPs are not recorded as managed, so Nexus will not prune a server that it never accepted for deployment. If the previous lockfile records an optional MCP as managed and the next sync skips it, Nexus treats it as stale and prunes it.
 
 ## Stale Managed MCP Pruning
 

@@ -326,20 +326,16 @@ def test_claude_mcp_sync_uses_claude_json_global_shape(tmp_path):
 
     deployer = nexus.Deployer(cfg)
     deployer.sync_mcps([{
-        "name": "chrome-devtools",
-        "command": "npx",
-        "args": ["-y", "chrome-devtools-mcp@latest", "--autoConnect"],
+        "name": "example-mcp",
+        "command": "uvx",
+        "args": ["mcp-docs"],
     }])
 
     data = json.loads(mcp_path.read_text())
     assert data["numStartups"] == 1
     assert "projects" not in data
     assert data["mcpServers"]["user-only"] == {"command": "custom"}
-    assert data["mcpServers"]["chrome-devtools"]["args"] == [
-        "-y",
-        "chrome-devtools-mcp@latest",
-        "--autoConnect",
-    ]
+    assert data["mcpServers"]["example-mcp"]["args"] == ["mcp-docs"]
 
 
 def test_codex_mcp_sync_preserves_placeholder_env_from_existing_managed_block(tmp_path):
@@ -888,13 +884,13 @@ def test_doctor_validates_generated_skill_overlays(tmp_path, capsys):
 
 
 def test_discover_uses_skill_frontmatter_name(tmp_path):
-    skill_dir = tmp_path / "pkg" / "agent_reach" / "skill"
+    skill_dir = tmp_path / "pkg" / "sample_tool" / "skill"
     skill_dir.mkdir(parents=True)
-    (skill_dir / "SKILL.md").write_text("---\nname: agent-reach\n---\n\n# Agent Reach\n")
+    (skill_dir / "SKILL.md").write_text("---\nname: sample-tool\n---\n\n# Sample Tool\n")
 
-    discovery = nexus.PackageManager.discover(tmp_path / "pkg", "Agent-Reach")
+    discovery = nexus.PackageManager.discover(tmp_path / "pkg", "Sample-Tool")
 
-    assert discovery["skills"] == [{"name": "agent-reach", "path": str(skill_dir)}]
+    assert discovery["skills"] == [{"name": "sample-tool", "path": str(skill_dir)}]
 
 
 def test_discover_allows_explicit_hidden_sparse_skill_path(tmp_path):

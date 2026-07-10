@@ -9,7 +9,7 @@ Broad presets are skills-first. MCP and hooks stay disabled unless Nexus has a t
 | Resource | Claude Code | Cursor | Antigravity | Codex | Status |
 | --- | --- | --- | --- | --- | --- |
 | Skills | symlinked into `~/.claude/skills/` | symlinked into `~/.cursor/skills/` | symlinked into `~/.gemini/antigravity/skills/` | symlinked into `~/.codex/skills/` | implemented |
-| MCP stdio | merged into `~/.claude/.mcp.json` | merged into `~/.cursor/mcp.json` | merged into `~/.gemini/antigravity/mcp_config.json` | written inside a managed block in `~/.codex/config.toml` | implemented |
+| MCP stdio | merged into `~/.claude.json` | merged into `~/.cursor/mcp.json` | merged into `~/.gemini/antigravity/mcp_config.json` | written inside a managed block in `~/.codex/config.toml` | implemented |
 | MCP SSE URL | merged as `type: sse` + `url` | merged as `type: sse` + `url` | merged as `serverUrl` | written as `type = "sse"` + `url` | implemented |
 | MCP HTTP URL | merged as `type: http` + `url` | merged as `type: http` + `url` | merged as `serverUrl` | written as `url` | implemented |
 | MCP env placeholders | preserves existing local env values when manifest uses `${TOKEN}` | preserves existing local env values when manifest uses `${TOKEN}` | preserves existing local env values when manifest uses `${TOKEN}` | preserves existing local env values inside the managed block | implemented |
@@ -72,7 +72,7 @@ Broad presets are skills-first. MCP and hooks stay disabled unless Nexus has a t
 ### Claude Code
 
 - Skills are managed symlinks in `~/.claude/skills/`.
-- MCP servers are merged into `~/.claude/.mcp.json` using the `mcpServers` shape.
+- MCP servers are merged into `~/.claude.json` using the `mcpServers` shape.
 - Package hook files for Claude are copied into repo-local `.github/hooks/`.
 - Commands and agents are discovered and recorded in the lockfile, but Nexus does not deploy native command or agent files yet.
 

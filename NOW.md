@@ -1,16 +1,17 @@
 # Now
 
 ## Current Focus
-Agent Nexus competitive roadmap work is in progress. Broad target expansion is implemented: omitted manifest `targets` select the four core native adapters (`claude`, `cursor`, `antigravity`, `codex`), while `targets: ["*"]` expands to 41 skills target presets including Hermes, Qwen Code, Crush, OpenCode, Windsurf, and more. Docs/README distinguish broad skills support from tested MCP/hook writers.
+Agent Nexus browser tooling is simplified and deployed locally: Kimi WebBridge 1.11.0 is a Nexus-managed, manual-only skill on the four core targets; Playwright is optional and skipped by default; Chrome DevTools is no longer enabled as a default user MCP.
 
 ## Active Blockers
-- No implementation blocker is known.
-- Competitive claims about AGHub/GAAL should be re-verified before publishing comparison copy externally.
+- No implementation or deployment blocker is known.
+- The canonical Kimi WebBridge source is intentionally local and gitignored, so another machine needs its own adopted source until a pinned remote 1.11.0 package is available.
 
 ## Immediate Next Step
-- Continue `COMPETITIVE_IMPROVEMENT_PLAN.md` with the next highest-value gap: remaining Phase 9 release quality (CI, temp-home audit, golden config fixtures, lightweight docs link checking, release checklist) or Phase 10 launch-ready story cleanup.
+- Decide whether to publish or pin a portable Kimi WebBridge 1.11.0 package source for cross-machine reproduction.
 
 ## Session State
-- Last modified: 2026-07-08T00:21:00.642Z
-- Files touched: `README.md`, `docs/manifest.md`, `docs/targets.md`, `COMPETITIVE_IMPROVEMENT_PLAN.md`, `nexus.py`, `tests/test_nexus.py`, `PLAN.md`, `NOW.md`, `CONTEXT.md`.
-- Verification complete: `python -m py_compile nexus.py`, `python -m pytest tests/test_nexus.py` (73 passed), temp-home core-default CLI smoke, and temp-home wildcard 41-target audit smoke.
+- Last modified: 2026-07-09
+- Tracked work updates browser-tooling examples, routing documentation, Claude MCP path references, and neutral test fixtures.
+- Local deployment pruned Playwright and Agent-Reach, preserved Codex-only MCPs, deployed Kimi WebBridge to Claude/Cursor/Antigravity/Codex, and removed the user Chrome DevTools MCP.
+- Verification complete: `python3 -m pytest tests` (74 passed), `python3 -m py_compile nexus.py`, YAML structure checks, two reviewed dry runs, `nexus audit`, `nexus doctor`, active MCP inspection, Kimi overlay checks, and daemon health.

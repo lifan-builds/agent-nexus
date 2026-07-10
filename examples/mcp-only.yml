@@ -13,12 +13,12 @@ mcps:
     command: npx
     args: ["-y", "@upstash/context7-mcp@latest"]
 
-  - name: playwright
-    command: npx
-    args: ["-y", "@playwright/mcp@latest"]
-
   - name: remote-docs
     transport: sse
     url: https://example.com/mcp
 
-optional_mcps: []
+optional_mcps:
+  - name: playwright
+    command: npx
+    args: ["-y", "@playwright/mcp@latest"]
+    description: Isolated, reproducible browser automation; enable only when needed

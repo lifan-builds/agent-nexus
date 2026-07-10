@@ -205,13 +205,23 @@ Use `--no-open` when you want the server URL without automatically opening a bro
 | Dashboard controls | Inspect state, tune skill and target policy, and run a confirmed deploy from localhost. |
 | Traceability | Record resolved packages, deployed resources, overlays, and managed MCPs in `nexus.lock.yml`. |
 
+## Browser tooling policy
+
+Keep browser access narrow and intentional:
+
+- **Kimi WebBridge** is a package-managed skill for explicitly requested work in the user's real browser and existing login sessions. Keep model invocation disabled unless the user asks for real-browser control.
+- **Playwright MCP** is optional and suited to isolated, reproducible browser automation and end-to-end testing. Put it under `optional_mcps` rather than enabling it for every sync.
+- **Chrome DevTools MCP** is not a default Nexus-managed server. Install it locally only for focused Lighthouse, performance trace, Core Web Vitals, or heap diagnostics.
+
+See [docs/mcp.md](docs/mcp.md) for configuration and pruning behavior.
+
 ## Supported targets
 
 Nexus focuses on **four tested native targets** and can deploy skills to **41 target presets** when you opt in.
 
 | Target | Skills | MCP servers | Hooks |
 | --- | --- | --- | --- |
-| Claude Code | `~/.claude/skills/` | `~/.claude/.mcp.json` | repo `.github/hooks/` |
+| Claude Code | `~/.claude/skills/` | `~/.claude.json` | repo `.github/hooks/` |
 | Cursor | `~/.cursor/skills/` | `~/.cursor/mcp.json` | repo `.cursor/hooks.json` |
 | Google Antigravity | `~/.gemini/antigravity/skills/` | `~/.gemini/antigravity/mcp_config.json` | not deployed |
 | Codex | `~/.codex/skills/` | managed block in `~/.codex/config.toml` | `~/.codex/hooks.json` or `$CODEX_HOME/hooks.json` |

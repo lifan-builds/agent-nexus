@@ -10,7 +10,7 @@ version: 1.0.0
 
 # IDEs to deploy skills, hooks, and MCP configs to
 targets:
-  - claude         # ~/.claude/skills/, ~/.claude/.mcp.json
+  - claude         # ~/.claude/skills/, ~/.claude.json
   - cursor         # ~/.cursor/skills/, ~/.cursor/mcp.json
   - antigravity    # ~/.gemini/antigravity/skills/, ~/.gemini/antigravity/mcp_config.json
   - codex          # ~/.codex/skills/, ~/.codex/config.toml
@@ -63,10 +63,6 @@ mcps:
     command: npx
     args: ["-y", "@modelcontextprotocol/server-sequential-thinking"]
 
-  - name: playwright
-    command: npx
-    args: ["-y", "@playwright/mcp@latest"]
-
   - name: context7
     command: npx
     args: ["-y", "@upstash/context7-mcp@latest"]
@@ -78,6 +74,11 @@ mcps:
 
 # Optional MCPs (prompted interactively, or auto-included with --all)
 optional_mcps:
+  - name: playwright
+    command: npx
+    args: ["-y", "@playwright/mcp@latest"]
+    description: "Isolated, reproducible browser automation; enable only when needed"
+
   - name: github-mcp
     command: npx
     args: ["-y", "@modelcontextprotocol/server-github"]

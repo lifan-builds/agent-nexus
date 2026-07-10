@@ -11,7 +11,7 @@ around review, merge preservation, and traceability.
 - previous lockfile: `nexus.personal.lock.yml` or `nexus.lock.yml`
 - local package files for dashboard skill token-footprint estimates
 - existing target config files before merge:
-  - `~/.claude/.mcp.json`
+  - `~/.claude.json`
   - `~/.cursor/mcp.json`
   - `~/.gemini/antigravity/mcp_config.json`
   - `~/.codex/config.toml`
@@ -43,13 +43,15 @@ around review, merge preservation, and traceability.
 ```text
 ==> Security review - MCP servers to be registered:
 
-    playwright                     stdio: npx -y @playwright/mcp@latest
+    context7                       stdio: npx -y @upstash/context7-mcp@latest
 ```
 
 Without `--yes`, Nexus asks for confirmation before applying those executable
 MCP changes. `nexus sync --dry-run` prints the same review and exits before
 writing target IDE config or lockfiles. It may still populate `.nexus/cache/`
-while resolving packages for discovery.
+while resolving packages for discovery. Browser MCPs such as Playwright should be
+optional when they are not required for every agent session. Declining a previously
+managed optional MCP removes it from target configs during the next accepted sync.
 
 Hooks are executable too. `sync --dry-run` and interactive `sync` print hook commands before writing hook config. Nexus only removes managed Codex hook commands marked with `--nexus-package`; unmanaged user hook commands are preserved.
 

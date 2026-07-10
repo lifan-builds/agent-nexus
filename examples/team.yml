@@ -34,4 +34,4 @@ optional_mcps:
   - name: playwright
     command: npx
     args: ["-y", "@playwright/mcp@latest"]
-    description: Browser automation for teams that need it
+    description: Isolated, reproducible browser automation; enable only when needed

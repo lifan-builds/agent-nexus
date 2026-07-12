@@ -47,11 +47,12 @@ around review, merge preservation, and traceability.
 ```
 
 Without `--yes`, Nexus asks for confirmation before applying those executable
-MCP changes. `nexus sync --dry-run` prints the same review and exits before
-writing target IDE config or lockfiles. It may still populate `.nexus/cache/`
-while resolving packages for discovery. Browser MCPs such as Playwright should be
-optional when they are not required for every agent session. Declining a previously
-managed optional MCP removes it from target configs during the next accepted sync.
+MCP changes. `nexus sync --dry-run` prints the same review and exits without
+persistent cache, generated overlays, target config, hooks, or lockfile writes.
+Uncached GitHub packages are inspected in temporary storage. Browser MCPs such as
+Playwright should be optional when they are not required for every agent session.
+Declining a previously managed optional MCP removes it from target configs during
+the next accepted sync.
 
 Hooks are executable too. `sync --dry-run` and interactive `sync` print hook commands before writing hook config. Nexus only removes managed Codex hook commands marked with `--nexus-package`; unmanaged user hook commands are preserved.
 
@@ -68,10 +69,10 @@ Dashboard writes are limited to explicit actions:
 - package skill-policy saves validate the selected package and skills, then update
   only `packages[].skills` and the manual-invocation fields under
   `packages[].skill_overrides`,
-- deploy actions call the existing `sync --yes` path only after the UI sends the
-  exact confirmation string.
+- raw manifest saves use redacted text, validation, atomic replacement, and a manifest revision check,
+- deploy actions rebuild the reviewed plan and require the same plan hash, manifest revision, and exact confirmation string.
 
-Skill-policy saves are structured writes, not raw manifest editing, and do not require MCP env/header values in the browser payload.
+Skill-policy saves are structured writes and do not require MCP env/header values in the browser payload. The advanced manifest editor never returns real secret values to the browser.
 
 The dashboard sanitizes MCP env and header values before returning state to the
 browser. It shows env/header key names only. Token and cost values are static

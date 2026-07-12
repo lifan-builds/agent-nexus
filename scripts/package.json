@@ -1,5 +1,5 @@
 {
   "private": true,
   "type": "commonjs",
-  "description": "context-harness runtime scripts"
+  "description": "Agent Nexus development and context-harness support scripts"
 }

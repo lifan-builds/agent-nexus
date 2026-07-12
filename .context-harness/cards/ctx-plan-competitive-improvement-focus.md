@@ -12,19 +12,19 @@ tags: [plan, competitive-improvement-focus]
 # PLAN.md: Competitive Improvement Focus
 
 ## Summary
-The current public positioning should be: Agent Nexus is the safe package
+The current public positioning should be: Agent Nexus is the safe package manager for serious agent workspaces.
 
 ## Use when
-- continuing the active task
-- checking done criteria or decisions
-- update context with task-local progress
+- continuing task-local competitive improvement focus
 
 ## Key facts
-- The current public positioning should be: Agent Nexus is the safe package
-- manager for serious agent workspaces. It installs MCP servers, skills, hooks,
-- and GitHub agent packages across Claude Code, Cursor, Google Antigravity, and
-- Codex from one personal manifest, with dry-run review, native config sync,
-- lockfile traceability, and doctor verification.
+- AGHub and GAAL are the key competitors to keep in mind. AGHub wins on broad 22+/23-agent hub positioning and MCP/portable-skill management.
+- Use COMPETITIVEIMPROVEMENTPLAN.md as the long-running implementation plan.
 
-## Open next
+## Retrieval order
+- Read `NOW.md` and concise `CONTEXT.md` as the always-read layer.
+- Use this card before opening bulky `PLAN.md`, chunks, or raw source sections for this topic.
+- Open raw detail only when this summary is insufficient for the task.
+
+## Open next only if needed
 - `PLAN.md#competitive-improvement-focus`

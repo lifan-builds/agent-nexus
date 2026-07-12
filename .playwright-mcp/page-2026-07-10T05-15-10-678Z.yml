@@ -1,0 +1,90 @@
+- generic [active] [ref=e1]:
+  - link "Skip to dashboard content" [ref=e2] [cursor=pointer]:
+    - /url: "#mainContent"
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e10]:
+        - heading "Review your agent workspace" [level=1] [ref=e11]
+        - paragraph [ref=e12]: Inspect packages, target health, and deploy readiness before Nexus writes native config.
+        - generic [ref=e13]: "Manifest: nexus.personal.yml | Lockfile: nexus.personal.lock.yml"
+        - generic "Dashboard safety properties" [ref=e14]:
+          - generic [ref=e15]: localhost only
+          - generic [ref=e16]: redacted secrets
+          - generic [ref=e17]: confirmed deploys
+      - generic [ref=e18]:
+        - button "Refresh state" [ref=e19] [cursor=pointer]
+        - button "Deploy reviewed plan" [disabled] [ref=e20] [cursor=pointer]
+  - main [ref=e21]:
+    - status [ref=e22]: Preview complete. Deploy is available while the manifest remains unchanged.
+    - alert [ref=e23]
+    - generic [ref=e24]:
+      - generic [ref=e178]:
+        - generic [ref=e179]:
+          - generic [ref=e180]: Workspace readiness
+          - generic [ref=e181]: 1 warning to review
+          - generic [ref=e182]: Inspect warnings, then preview again before deployment.
+        - generic [ref=e183]:
+          - generic [ref=e184]:
+            - generic [ref=e185]: Manifest nexus.personal.yml
+            - generic [ref=e186]: Stage configured
+            - generic [ref=e187]: Lockfile pending
+          - generic [ref=e188]:
+            - generic [ref=e189]:
+              - strong [ref=e190]: Next safe step
+              - generic [ref=e191]: Build a non-persistent review plan.
+            - button "Preview dry run" [ref=e192] [cursor=pointer]
+      - generic [ref=e193]:
+        - generic [ref=e194]: "4"
+        - generic [ref=e195]: Targets
+        - generic [ref=e196]: selected destinations
+      - generic [ref=e197]:
+        - generic [ref=e198]: "0"
+        - generic [ref=e199]: Packages
+        - generic [ref=e200]: declared or lockfile-traced
+      - generic [ref=e201]:
+        - generic [ref=e202]: "0"
+        - generic [ref=e203]: Skills
+        - generic [ref=e204]: 0 disabled · 0 manual only
+    - generic "Agent Nexus workflow" [ref=e52]:
+      - generic [ref=e205]:
+        - strong [ref=e206]: Inspect
+        - text: Read local state.
+      - generic [ref=e207]:
+        - strong [ref=e208]: Configure
+        - text: Create or edit the manifest.
+      - generic [ref=e209]:
+        - strong [ref=e210]: Preview
+        - text: Review an exact plan.
+      - generic [ref=e211]:
+        - strong [ref=e212]: Deploy
+        - text: Apply the reviewed plan.
+      - generic [ref=e213]:
+        - strong [ref=e214]: Verify
+        - text: Inspect health and lockfile.
+    - group [ref=e63]:
+      - generic [ref=e139] [cursor=pointer]:
+        - generic [ref=e65]:
+          - strong [ref=e66]: Latest dashboard action
+          - text: dry-run and deploy output
+        - text: Close
+      - generic [ref=e140]: "==> Resolving optional MCPs... ==> Fetching packages... ==> Plan: 2c24bd3d7101 (manifest b5f31f22e957) ==> Security review - MCP servers to be registered: ==> Dry run - no target configs or lockfiles written. No persistent cache or hooks written. ==> Would deploy:"
+    - tablist "Dashboard views" [ref=e67]:
+      - tab [ref=e68] [cursor=pointer]:
+        - strong [ref=e69]: Packages
+      - tab [ref=e70] [cursor=pointer]:
+        - strong [ref=e71]: Targets
+      - tab [ref=e72] [cursor=pointer]:
+        - strong [ref=e73]: Health
+      - tab [selected] [ref=e74] [cursor=pointer]:
+        - strong [ref=e75]: Manifest
+    - text: Open Open Open Open Open
+    - tabpanel "Manifest" [ref=e167]:
+      - generic [ref=e216]:
+        - heading "Manifest" [level=2] [ref=e217]
+        - generic [ref=e218]: Advanced redacted YAML editor. Structured controls remain the safer choice for common changes.
+      - generic [ref=e219]: Secret values stay hidden and are restored only when their redaction placeholders remain in place.
+      - textbox [ref=e220]: "name: wheel-work version: 1.0.0 targets: - claude - cursor - antigravity - codex packages: [] mcps: [] optional_mcps: [] # changed after preview"
+      - generic [ref=e221]:
+        - button "Validate" [ref=e222] [cursor=pointer]
+        - button "Save manifest" [ref=e223] [cursor=pointer]
+      - generic [ref=e224]: "Revision: 58ba6ad00aa4825192ede68fd0fb6c9afc5594178f357c5978e8adc8f4b0b503"

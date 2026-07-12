@@ -544,26 +544,37 @@ def test_lockfile_records_accepted_optional_mcps(tmp_path):
     ]
 
 
-def test_init_creates_personal_manifest_from_example(tmp_path, capsys):
+def test_init_creates_safe_personal_manifest_by_default(tmp_path, capsys):
+    cfg = nexus.Config(tmp_path)
+
+    nexus.cmd_init(cfg, SimpleNamespace(force=False, template="safe"))
+
+    data = nexus.parse_manifest_text((tmp_path / "nexus.personal.yml").read_text())
+    assert data["packages"] == []
+    assert data["mcps"] == []
+    assert data["optional_mcps"] == []
+    assert data["targets"] == nexus.CORE_DEFAULT_TARGETS
+    captured = capsys.readouterr()
+    assert "safe starter" in captured.err
+
+
+def test_init_can_explicitly_use_comprehensive_example(tmp_path):
     (tmp_path / "nexus.example.yml").write_text("name: example\n")
     cfg = nexus.Config(tmp_path)
 
-    nexus.cmd_init(cfg, SimpleNamespace(force=False))
+    nexus.cmd_init(cfg, SimpleNamespace(force=False, template="example"))
 
     assert (tmp_path / "nexus.personal.yml").read_text() == "name: example\n"
-    captured = capsys.readouterr()
-    assert "Created nexus.personal.yml" in captured.err
 
 
 def test_init_refuses_to_overwrite_existing_personal_manifest(tmp_path):
-    (tmp_path / "nexus.example.yml").write_text("name: example\n")
     (tmp_path / "nexus.personal.yml").write_text("name: personal\n")
     cfg = nexus.Config(tmp_path)
 
     try:
-        nexus.cmd_init(cfg, SimpleNamespace(force=False))
-    except SystemExit as exc:
-        assert exc.code == 1
+        nexus.cmd_init(cfg, SimpleNamespace(force=False, template="safe"))
+    except nexus.NexusError as exc:
+        assert "already exists" in str(exc)
     else:
         raise AssertionError("cmd_init should refuse to overwrite without --force")
 

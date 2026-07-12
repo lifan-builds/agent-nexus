@@ -18,11 +18,16 @@ At session start/resume, read NOW.md first, then use the Context Index below to 
 - working on context contract
 
 ## Key facts
-- At session start/resume, read NOW.md first, then use the Context Index below to choose relevant CONTEXT.md sections.
 - Before planning or editing, respect CONTEXT.md ## Rules.
-- If the user teaches a durable term, invariant, workflow, constraint, or
-- correction, update CONTEXT.md before it scrolls away.
-- Route task-local findings and decisions to PLAN.md; durable lessons to
+- If the user teaches a durable term, invariant, workflow, constraint, or correction, update CONTEXT.md before it scrolls away.
+- Route task-local findings and decisions to PLAN.md; durable lessons to CONTEXT.md.
+- After updating CONTEXT.md, run node scripts/context-index.js update.
+- Before ending, update NOW.md with current focus, blockers, next step, and touched files.
 
-## Open next
+## Retrieval order
+- Read `NOW.md` and concise `CONTEXT.md` as the always-read layer.
+- Use this card before opening bulky `PLAN.md`, chunks, or raw source sections for this topic.
+- Open raw detail only when this summary is insufficient for the task.
+
+## Open next only if needed
 - `CONTEXT.md#context-contract`

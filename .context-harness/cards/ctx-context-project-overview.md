@@ -12,13 +12,18 @@ tags: [context, project-overview, project]
 # CONTEXT.md: Project Overview
 
 ## Summary
-agent-nexus is a centralized configuration repository and framework for managing AI agent environments across multiple IDEs. It provides a single manifest that declares packages (skills, hooks, commands), MCP servers,...
+agent-nexus is a centralized configuration repository and framework for managing AI agent environments across multiple IDEs.
 
 ## Use when
 - working on project overview
 
 ## Key facts
-- agent-nexus is a centralized configuration repository and framework for managing AI agent environments across multiple IDEs. It provides a single manifest th...
+- Use this card before opening bulky raw context for this topic.
 
-## Open next
+## Retrieval order
+- Read `NOW.md` and concise `CONTEXT.md` as the always-read layer.
+- Use this card before opening bulky `PLAN.md`, chunks, or raw source sections for this topic.
+- Open raw detail only when this summary is insufficient for the task.
+
+## Open next only if needed
 - `CONTEXT.md#project-overview`

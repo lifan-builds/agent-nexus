@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# DEPRECATED: retained as a historical reference only. Use `nexus` / `nexus.py`.
+# This Bash implementation does not receive current safety, target, or dashboard fixes.
 # nexus — Agent environment manager
 # Manages skills, hooks, and MCP servers across multiple AI IDEs from nexus.yml.
 set -euo pipefail

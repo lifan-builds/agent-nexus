@@ -12,19 +12,19 @@ tags: [plan, follow-ups]
 # PLAN.md: Follow-Ups
 
 ## Summary
-Before publishing, switch any local-only path: ../context-harness release
+Before publishing, switch any local-only path: ../context-harness release validation back to the public repo/ref after Context Harness is pushed.
 
 ## Use when
-- continuing the active task
-- checking done criteria or decisions
-- update context with task-local progress
+- continuing task-local follow-ups
 
 ## Key facts
-- Before publishing, switch any local-only path: ../context-harness release
-- validation back to the public repo/ref after Context Harness is pushed.
-- Keep competitor line-item claims out of launch copy unless re-verified against
-- current public docs immediately before publishing.
-- If commands/agents deployment becomes real instead of lockfile-only discovery,
+- Keep competitor line-item claims out of launch copy unless re-verified against current public docs immediately before publishing.
+- If commands/agents deployment becomes real instead of lockfile-only discovery, update README and demo docs.
 
-## Open next
+## Retrieval order
+- Read `NOW.md` and concise `CONTEXT.md` as the always-read layer.
+- Use this card before opening bulky `PLAN.md`, chunks, or raw source sections for this topic.
+- Open raw detail only when this summary is insufficient for the task.
+
+## Open next only if needed
 - `PLAN.md#follow-ups`

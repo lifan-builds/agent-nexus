@@ -48,7 +48,7 @@ targets:
 
 If `targets` is omitted, Nexus defaults to the four core native targets: `claude`, `cursor`, `antigravity`, and `codex`. Use `targets: ["*"]` to deploy skills to every skills target preset. Nexus currently includes 41 skills presets; only the core targets have tested MCP writers and hook support where listed in `docs/targets.md`.
 
-Common aliases such as `claude-code`, `google-antigravity`, `openai-codex`, `hermes-agent`, `qwen`, `roo-code`, `copilot`, `kilo`, and `open-code` are canonicalized to target keys. Unknown targets are ignored by current deployment paths unless test fixtures provide custom paths.
+Common aliases such as `claude-code`, `google-antigravity`, `openai-codex`, `hermes-agent`, `qwen`, `roo-code`, `copilot`, `kilo`, and `open-code` are canonicalized to target keys. Unknown targets are rejected with an actionable validation error so typos cannot become silent no-ops.
 
 ## Packages
 

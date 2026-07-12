@@ -33,3 +33,7 @@
 - Fixed optional MCP lockfile semantics. (archived 2026-07-07)
 - Fixed Codex TOML stale MCP pruning and added regression coverage. (archived 2026-07-07)
 - Updated the local gitignored manifest to test `../context-harness`, include (archived 2026-07-07)
+- Completed competitive roadmap baseline, public docs parity, audit, MCP docs and tests, package trust docs, hook lifecycle hardening, demo assets, clone-based install polish, and subprocess CLI smoke coverage. (archived 2026-07-08)
+- Added package-level `targets` and `skill_overrides`, including Codex `agents/openai.yaml` overlays materialized under `.nexus/generated/`. (archived 2026-07-08)
+- Hardened JSON and Codex MCP merge/prune behavior around local keys, env placeholders, optional MCP lockfile semantics, and content outside the Codex managed block. (archived 2026-07-08)
+- Made omitted manifest `targets` default to the four core native adapters (`claude`, `cursor`, `antigravity`, `codex`), added 41 skills target presets behind `targets: ["*"]`, added broad alias canonicalization, and documented the core-vs-skills target policy. (archived 2026-07-08)

@@ -1,0 +1,26 @@
+name: Bug report
+description: Report incorrect or unsafe Agent Nexus behavior
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include tokens, private repository URLs, or unredacted personal paths.
+  - type: input
+    id: version
+    attributes:
+      label: Nexus version
+      placeholder: nexus v0.2.0
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include command, redacted manifest, expected result, and actual result.
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Redacted doctor output

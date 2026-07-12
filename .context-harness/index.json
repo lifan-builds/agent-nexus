@@ -1,7 +1,7 @@
 {
-  "schema": 1,
-  "updated_at": "2026-07-08",
-  "source_hash": "165d5eb4d8a39c116c604f57489389b3d178d2c3340486982c73b043c3c321a8",
+  "schema": 2,
+  "updated_at": "2026-07-10",
+  "source_hash": "0f513e0a6f6f07b08e14fa814dc6b3a3a5edc2714f655bb33c8dd47e13dbba8a",
   "sources": [
     {
       "path": "CONTEXT.md",
@@ -10,12 +10,12 @@
     },
     {
       "path": "NOW.md",
-      "sha256": "c950505a803aaf1da1fc510c7fe4ea21b0c615e1c3d1a53291d01d29d9f57626",
-      "lines": 16
+      "sha256": "ee26c5eedc6b93fc06c1af497e07a3bd9efcd0ff7112d6792b85ba5f768f6655",
+      "lines": 17
     },
     {
       "path": "PLAN.md",
-      "sha256": "97242897e7bb9da23fcafd14f2f481a4419f06549bf0d660e372cfdf51c33578",
+      "sha256": "b3258560d2b6b43739be6980c8941911fea52c91c670351df88a604cacc4590e",
       "lines": 171
     }
   ],
@@ -23,7 +23,7 @@
     {
       "id": "ctx-context-project",
       "title": "CONTEXT.md: Project",
-      "summary": "agent-nexus is the safe package manager for serious agent workspaces: it installs MCP servers, skills, hooks, and GitHub agent packages across AI IDEs (Claude Code, Cursor, Google Antigravity, Codex) from one personal...",
+      "summary": "agent-nexus is the safe package manager for serious agent workspaces: it installs MCP servers, skills, hooks, and GitHub agent packages across AI IDEs (Claude Code, Cursor, Google Antigravity,...",
       "source": "CONTEXT.md#project",
       "source_path": "CONTEXT.md",
       "kind": "project",
@@ -42,14 +42,12 @@
       "card_path": ".context-harness/cards/ctx-context-project.md",
       "chunk_path": "",
       "content_sha256": "3488449001f02491abe5b3eba7955009efde9003fb8de5854cbad3d4429bceb0",
-      "key_facts": [
-        "agent-nexus is the safe package manager for serious agent workspaces: it installs MCP servers, skills, hooks, and GitHub agent packages across AI IDEs (Claud..."
-      ]
+      "key_facts": []
     },
     {
       "id": "ctx-context-structure",
       "title": "CONTEXT.md: Structure",
-      "summary": ".",
+      "summary": "repo map",
       "source": "CONTEXT.md#structure",
       "source_path": "CONTEXT.md",
       "kind": "context",
@@ -68,13 +66,7 @@
       "card_path": ".context-harness/cards/ctx-context-structure.md",
       "chunk_path": "",
       "content_sha256": "13d292beb19cf3e59335717bb3073ebf44ed4c487acd8c3cea77a6c07930f719",
-      "key_facts": [
-        ".",
-        "nexus.py          # CLI entry point (sync, list, doctor, clean)",
-        "nexus.yml         # Central manifest (gitignored; use nexus.example.yml as template)",
-        "nexus.example.yml # Example manifest checked into repo",
-        "nexus.sh          # Legacy bash CLI (working spec for Go rewrite)"
-      ]
+      "key_facts": []
     },
     {
       "id": "ctx-context-operating-constraints",
@@ -94,19 +86,17 @@
         "constraints"
       ],
       "read_when": [
-        "before planning or editing",
-        "checking project constraints",
-        "update context safely"
+        "before choosing an implementation or changing project behavior"
       ],
       "card_path": ".context-harness/cards/ctx-context-operating-constraints.md",
       "chunk_path": "",
       "content_sha256": "fcd88f43f54fd52688e2bb4e98302fabac225c3d6d7a57432b9fc10418de2954",
       "key_facts": [
-        "Do not classify packages by type — auto-discover all assets (skills, hooks, commands, agents) from file patterns (SKILL.md, hooks.json, etc.).",
         "Do not write to global IDE config files without showing a security review gate first.",
         "Do not add Python dependencies beyond PyYAML to nexus.py.",
         "Deduplicate hooks by content hash before writing to any IDE config.",
-        "Preserve existing MCP config keys during merge — don't overwrite local configs or secrets."
+        "Preserve existing MCP config keys during merge — don't overwrite local configs or secrets.",
+        "Cache packages by commit SHA at .nexus/cache/ (content-addressed, immutable snapshots)."
       ]
     },
     {
@@ -126,13 +116,12 @@
         "workflow"
       ],
       "read_when": [
-        "running, testing, linting, deploying, deployment, or verifying changes"
+        "running, testing, linting, deploying, or verifying changes"
       ],
       "card_path": ".context-harness/cards/ctx-context-workflow.md",
       "chunk_path": "",
       "content_sha256": "dfc309b6f8a02b68a07e21e99bb95d431b725fae3430a4ace47de3919c9154f9",
       "key_facts": [
-        "Setup: pip install pyyaml && python nexus.py init && ln -sf $(pwd)/nexus.py ~/.local/bin/nexus",
         "Run: nexus sync --dry-run, then nexus sync after reviewing MCP commands",
         "Test: nexus doctor",
         "Lint: ruff check nexus.py (once ruff is added)"
@@ -155,14 +144,12 @@
         "language"
       ],
       "read_when": [
-        "using project terms or resolving naming ambiguity",
-        "update context terminology"
+        "using canonical project terms or resolving naming ambiguity"
       ],
       "card_path": ".context-harness/cards/ctx-context-language.md",
       "chunk_path": "",
       "content_sha256": "02af84525222c24d18090c6acfa0e0db8e1e6648e270cb05341424e1d1661a94",
       "key_facts": [
-        "Manifest language: YAML, with nexus.personal.yml taking precedence on this machine.",
         "CLI implementation language: Python 3.10+ in nexus.py, with PyYAML as the only runtime dependency.",
         "Skill content language: Markdown, with each skill defined by a directory containing SKILL.md."
       ]
@@ -185,14 +172,12 @@
         "invariant"
       ],
       "read_when": [
-        "changing architecture or domain relationships",
-        "update context invariants"
+        "changing architecture or domain relationships"
       ],
       "card_path": ".context-harness/cards/ctx-context-relationships.md",
       "chunk_path": "",
       "content_sha256": "62040df785fc76d8095de599d03ee2bfec503156f06d3b15546bb4856935282a",
       "key_facts": [
-        "AGENTS.md is the small activation layer; CONTEXT.md is the durable source of truth, indexed by scripts/context-index.js.",
         "nexus.personal.yml is the active local manifest; nexus.example.yml is the checked-in public template.",
         "nexus.personal.lock.yml records resolved package commits and deployment metadata for the personal manifest.",
         "CONTEXT.md, NOW.md, and PLAN.md are owned by context-harness; Matt Pocock engineering skills consume those docs.",
@@ -221,9 +206,7 @@
       "card_path": ".context-harness/cards/ctx-context-flagged-ambiguities.md",
       "chunk_path": "",
       "content_sha256": "854f67f754ab78a125e73878822685a32d4bc94ff9ca4de0ccda4c0241592946",
-      "key_facts": [
-        "The Go rewrite is planned, but the exact scaffold, package layout, and release workflow are not yet settled in this context."
-      ]
+      "key_facts": []
     },
     {
       "id": "ctx-context-learned-patterns",
@@ -243,18 +226,17 @@
         "lesson"
       ],
       "read_when": [
-        "avoiding repeated mistakes or applying prior corrections",
-        "update context with durable lessons"
+        "avoiding a repeated failure or applying a durable correction"
       ],
       "card_path": ".context-harness/cards/ctx-context-learned-patterns.md",
       "chunk_path": "",
       "content_sha256": "86bcde77297361faef954fcb1ddf28830cce944ff9d31c20e98830e805e0e8d1",
       "key_facts": [
-        "Hook aggregation must preserve script execution paths relative to package cache dir — superpowers hooks read their own SKILL.md at runtime via relative path.",
-        "Codex hook deployment must preserve unmanaged user hooks by only stripping commands marked with --nexus-package, and tests must use a temporary CODEXHOME ins...",
-        "Skill metadata overlays must materialize under .nexus/generated/<target>/skills/<skill>/ and target symlinks should point there; never write overlay metadata...",
+        "Codex hook deployment must preserve unmanaged user hooks by only stripping commands marked with --nexus-package,...",
+        "Skill metadata overlays must materialize under .nexus/generated/<target>/skills/<skill>/ and target symlinks should point there;...",
         "Kasetto's MCP merge preserves existing keys (no overwrite) — nexus follows the same pattern to protect local secrets.",
-        "Codex MCP pruning must edit only the Nexus managed TOML block, remove stale managed server sections listed in the previous lockfile, and preserve content out..."
+        "Codex MCP pruning must edit only the Nexus managed TOML block, remove stale managed server sections listed in the previous lockfile,...",
+        "Omitted manifest targets default to the four core native adapters (claude, cursor, antigravity, codex); targets: [\"\"] expands to all skills target presets,..."
       ]
     },
     {
@@ -304,17 +286,17 @@
       "chunk_path": "",
       "content_sha256": "e926aff9386d7b8986e6d6bd57ccfa335792af425643d5adce58ad7b9b83f235",
       "key_facts": [
-        "At session start/resume, read NOW.md first, then use the Context Index below to choose relevant CONTEXT.md sections.",
         "Before planning or editing, respect CONTEXT.md ## Rules.",
-        "If the user teaches a durable term, invariant, workflow, constraint, or",
-        "correction, update CONTEXT.md before it scrolls away.",
-        "Route task-local findings and decisions to PLAN.md; durable lessons to"
+        "If the user teaches a durable term, invariant, workflow, constraint, or correction, update CONTEXT.md before it scrolls away.",
+        "Route task-local findings and decisions to PLAN.md; durable lessons to CONTEXT.md.",
+        "After updating CONTEXT.md, run node scripts/context-index.js update.",
+        "Before ending, update NOW.md with current focus, blockers, next step, and touched files."
       ]
     },
     {
       "id": "ctx-context-project-overview",
       "title": "CONTEXT.md: Project Overview",
-      "summary": "agent-nexus is a centralized configuration repository and framework for managing AI agent environments across multiple IDEs. It provides a single manifest that declares packages (skills, hooks, commands), MCP servers,...",
+      "summary": "agent-nexus is a centralized configuration repository and framework for managing AI agent environments across multiple IDEs.",
       "source": "CONTEXT.md#project-overview",
       "source_path": "CONTEXT.md",
       "kind": "project",
@@ -334,9 +316,7 @@
       "card_path": ".context-harness/cards/ctx-context-project-overview.md",
       "chunk_path": "",
       "content_sha256": "eb4ff8347b8742c040f6f76d7bd6cbaadb316cb1634e43e5698bed879d645e63",
-      "key_facts": [
-        "agent-nexus is a centralized configuration repository and framework for managing AI agent environments across multiple IDEs. It provides a single manifest th..."
-      ]
+      "key_facts": []
     },
     {
       "id": "ctx-context-tech-stack",
@@ -361,7 +341,6 @@
       "chunk_path": "",
       "content_sha256": "c898cb648e08a7dc3cdb3ef7d9912fe92047b1a21c27081479f0bc215c676731",
       "key_facts": [
-        "nexus — custom agent environment manager (manifest + CLI, replacing APM)",
         "Python 3.10+ — single-file CLI (nexus.py), only dependency is PyYAML",
         "Markdown for skill definitions (SKILL.md)",
         "YAML for manifests (nexus.example.yml, plus gitignored personal manifests)",
@@ -392,17 +371,17 @@
       "chunk_path": "",
       "content_sha256": "eae49cde3713005b85305388d18c6bc66ac542582d9277b4dc969a36ede256c0",
       "key_facts": [
-        "nexus.example.yml: Public template manifest checked into the repo.",
         "nexus.personal.yml: Personal manifest (gitignored). Declares packages, inline MCP servers, optional MCPs, and target IDEs for this machine.",
         "nexus.example.yml: Example manifest checked into the repo for reference.",
         "nexus.py: The nexus CLI. Symlinked to ~/.local/bin/nexus for global access. Run nexus sync, nexus list, nexus doctor, nexus clean.",
-        "nexus.sh: Legacy bash CLI (kept as backup, will be removed)."
+        "nexus.sh: Legacy bash CLI (kept as backup, will be removed).",
+        ".nexus/: Local cache directory (gitignored). Contains fetched packages keyed by github.com/org/repo/commit-sha/."
       ]
     },
     {
       "id": "ctx-context-installed-skills-mcp-servers",
       "title": "CONTEXT.md: Installed Skills & MCP Servers",
-      "summary": "| Package | Skill | Description |",
+      "summary": "| Package | Skill | Description | |---------|-------|-------------| | lifan-builds/context-harness | context-harness, context-init, context-catch-up, set-goal, context-maintain,...",
       "source": "CONTEXT.md#installed-skills-mcp-servers",
       "source_path": "CONTEXT.md",
       "kind": "context",
@@ -417,16 +396,12 @@
         "skills-from-packages"
       ],
       "read_when": [
-        "working on installed skills & mcp servers"
+        "working on installed skills & mcp servers, skills (from packages)"
       ],
       "card_path": ".context-harness/cards/ctx-context-installed-skills-mcp-servers.md",
       "chunk_path": "",
       "content_sha256": "8e6a19ab938d382b32cacc649a9e66069504d1217349ed58fcd6235877660c86",
       "key_facts": [
-        "| Package | Skill | Description |",
-        "|---------|-------|-------------|",
-        "| lifan-builds/context-harness | context-harness, context-init, context-catch-up, set-goal, context-maintain, context-upgrade | Project context docs, goal se...",
-        "| mattpocock/skills | domain-modeling, improve-codebase-architecture, codebase-design, grill-me, grilling | Curated engineering workflow skills; latest upstr...",
         "Additional packages (like obra/superpowers) can be added via nexus.personal.yml — see nexus.example.yml for a public template."
       ]
     },
@@ -451,17 +426,15 @@
         "mcp-servers-inline-in-personal-manifest"
       ],
       "read_when": [
-        "working on agent skills"
+        "working on agent skills, issue tracker, triage labels"
       ],
       "card_path": ".context-harness/cards/ctx-context-agent-skills.md",
       "chunk_path": "",
       "content_sha256": "1babf6fbe4ceb21088397dd6990663230e6da053c146398da5624171bd8febc0",
       "key_facts": [
-        "Issue workflow skills are not deployed right now. See docs/agents/issue-tracker.md.",
         "Triage labels are intentionally unconfigured while issue workflow skills are disabled. See docs/agents/triage-labels.md.",
-        "Single-context layout. Context-harness owns root CONTEXT.md, NOW.md, and PLAN.md; Matt Pocock's engineering skills consume those docs. See docs/agents/domain...",
-        "| Name | Transport | Description |",
-        "|------|-----------|-------------|"
+        "Single-context layout. Context-harness owns root CONTEXT.md, NOW.md, and PLAN.md; Matt Pocock's engineering skills consume those docs.",
+        "| Name | Transport | Description | |------|-----------|-------------| | sequential-thinking | stdio | Structured reasoning server | | playwright | stdio |..."
       ]
     },
     {
@@ -488,7 +461,6 @@
       "chunk_path": "",
       "content_sha256": "a6c72b6e4ee05c7f7163af9d04b5295350278f5fd17c47b426bbfd91a4067279",
       "key_facts": [
-        "To add a package: Add a repo: entry under packages: in nexus.personal.yml, then run nexus sync.",
         "To add an inline MCP: Add to the mcps: section of nexus.personal.yml. Use optional: true or place under optionalmcps: for interactive prompting.",
         "To add a local skill in development: Use path: ./my-skill under packages:.",
         "To deploy everything: Run nexus sync (or nexus sync --all to auto-include optionals)."
@@ -517,16 +489,15 @@
       "chunk_path": "",
       "content_sha256": "a0307c5991b35cace2416b62a734bbae31f575ad9ca6ec3d4a9938c009d6ce04",
       "key_facts": [
-        "Skills are directories containing a SKILL.md file. The directory name is the skill name.",
         "Hooks are discovered from hooks/hooks.json (Claude Code format) and hooks/hooks-cursor.json (Cursor format) within packages.",
-        "The active nexus manifest is the single source of truth for all managed dependencies and MCP servers. On this machine, nexus.personal.yml takes precedence ov...",
+        "The active nexus manifest is the single source of truth for all managed dependencies and MCP servers.",
         "No package type classification — nexus auto-discovers all asset types (skills, hooks, commands, agents) from each package."
       ]
     },
     {
       "id": "ctx-context-architecture-decisions",
       "title": "CONTEXT.md: Architecture Decisions",
-      "summary": "APM to nexus migration: APM misclassified hybrid packages (superpowers' 14 skills were never deployed because APM labeled it hookpackage), created duplicate hook entries (no dedup), and couldn't declare inline MCPs. d...",
+      "summary": "APM to nexus migration: APM misclassified hybrid packages (superpowers' 14 skills were never deployed because APM labeled it hookpackage), created duplicate hook entries (no dedup), and couldn't declare inline MCPs.",
       "source": "CONTEXT.md#architecture-decisions",
       "source_path": "CONTEXT.md",
       "kind": "context",
@@ -546,49 +517,47 @@
       "chunk_path": "",
       "content_sha256": "05f516de78f274baec8e1a3d6e085d662f0334d7ffdda6c595ef432d46e0b085",
       "key_facts": [
-        "APM to nexus migration: APM misclassified hybrid packages (superpowers' 14 skills were never deployed because APM labeled it hookpackage), created duplicate...",
-        "Unified package model: A package can provide any combination of skills, hooks, commands, agents, and MCPs. No type classification — auto-discover via file pa...",
+        "Unified package model: A package can provide any combination of skills, hooks, commands, agents, and MCPs.",
         "Inline MCP declarations: Most MCP servers are just npx <package>. Declaring them directly in the manifest eliminates the need for separate git repos.",
         "Hook deduplication: Hooks are deduplicated by content hash (minus metadata). Prevents the 42x duplication bug from APM.",
-        "Security review gate: Before writing MCP configs to global IDE files, nexus shows what commands will be registered and prompts for confirmation. README/relea..."
+        "Security review gate: Before writing MCP configs to global IDE files, nexus shows what commands will be registered and prompts for confirmation.",
+        "Content-addressed cache: Packages cached by commit SHA at .nexus/cache/github.com/org/repo/sha/."
       ]
     },
     {
       "id": "ctx-now-now",
       "title": "NOW.md: Now",
-      "summary": "Agent Nexus competitive roadmap work is in progress. Broad target expansion is implemented: omitted manifest targets select the four core native adapters (claude, cursor, antigravity, codex), while targets: [\"\"] expan...",
+      "summary": "Agent Nexus browser tooling is simplified and deployed locally: Kimi WebBridge 1.11.0 is a Nexus-managed, manual-only skill on the four core targets; Playwright is optional and skipped by default;...",
       "source": "NOW.md#now",
       "source_path": "NOW.md",
       "kind": "resume",
       "scope": "task",
       "importance": 0.95,
       "confidence": "confirmed",
-      "recency": "2026-07-08",
-      "tokens_est": 322,
+      "recency": "2026-07-10",
+      "tokens_est": 316,
       "tags": [
         "now",
         "resume"
       ],
       "read_when": [
-        "resuming the current session",
-        "choosing the immediate next step",
-        "update context after current work"
+        "recovering current focus, blockers, or the immediate next step"
       ],
       "card_path": ".context-harness/cards/ctx-now-now.md",
       "chunk_path": "",
-      "content_sha256": "c950505a803aaf1da1fc510c7fe4ea21b0c615e1c3d1a53291d01d29d9f57626",
+      "content_sha256": "ee26c5eedc6b93fc06c1af497e07a3bd9efcd0ff7112d6792b85ba5f768f6655",
       "key_facts": [
-        "Agent Nexus competitive roadmap work is in progress. Broad target expansion is implemented: omitted manifest targets select the four core native adapters (cl...",
-        "No implementation blocker is known.",
-        "Competitive claims about AGHub/GAAL should be re-verified before publishing comparison copy externally.",
-        "Continue COMPETITIVEIMPROVEMENTPLAN.md with the next highest-value gap: remaining Phase 9 release quality (CI, temp-home audit, golden config fixtures, light...",
-        "Last modified: 2026-07-07T23:59:00.000Z"
+        "No implementation or deployment blocker is known.",
+        "The canonical Kimi WebBridge source is intentionally local and gitignored, so another machine needs its own adopted source until a pinned remote 1.11.0...",
+        "Decide whether to publish or pin a portable Kimi WebBridge 1.11.0 package source for cross-machine reproduction.",
+        "Last modified: 2026-07-09",
+        "Tracked work updates browser-tooling examples, routing documentation, Claude MCP path references, and neutral test fixtures."
       ]
     },
     {
       "id": "ctx-plan-goal",
       "title": "PLAN.md: Goal",
-      "summary": "Make Agent Nexus release-ready as the trustworthy deployment layer for AI agent",
+      "summary": "Make Agent Nexus release-ready as the trustworthy deployment layer for AI agent environments. A skeptical developer should be able to see what Nexus writes, how it preserves local configuration,...",
       "source": "PLAN.md#goal",
       "source_path": "PLAN.md",
       "kind": "plan",
@@ -602,24 +571,17 @@
         "goal"
       ],
       "read_when": [
-        "continuing the active task",
-        "checking done criteria or decisions",
-        "update context with task-local progress"
+        "continuing task-local goal"
       ],
       "card_path": ".context-harness/cards/ctx-plan-goal.md",
       "chunk_path": "",
       "content_sha256": "73d9648bfa3c07d08d7e72a6a3cb2b404c3faeef22fc197eb0a038101ea87bfb",
-      "key_facts": [
-        "Make Agent Nexus release-ready as the trustworthy deployment layer for AI agent",
-        "environments. A skeptical developer should be able to see what Nexus writes,",
-        "how it preserves local configuration, how it complements native tools, and how",
-        "to verify a sync before touching target IDE config."
-      ]
+      "key_facts": []
     },
     {
       "id": "ctx-plan-competitive-improvement-focus",
       "title": "PLAN.md: Competitive Improvement Focus",
-      "summary": "The current public positioning should be: Agent Nexus is the safe package",
+      "summary": "The current public positioning should be: Agent Nexus is the safe package manager for serious agent workspaces.",
       "source": "PLAN.md#competitive-improvement-focus",
       "source_path": "PLAN.md",
       "kind": "plan",
@@ -633,25 +595,20 @@
         "competitive-improvement-focus"
       ],
       "read_when": [
-        "continuing the active task",
-        "checking done criteria or decisions",
-        "update context with task-local progress"
+        "continuing task-local competitive improvement focus"
       ],
       "card_path": ".context-harness/cards/ctx-plan-competitive-improvement-focus.md",
       "chunk_path": "",
       "content_sha256": "cf34ccf9fb130057bdeceb5e3f069573af36e741ef550a4256458630471f8588",
       "key_facts": [
-        "The current public positioning should be: Agent Nexus is the safe package",
-        "manager for serious agent workspaces. It installs MCP servers, skills, hooks,",
-        "and GitHub agent packages across Claude Code, Cursor, Google Antigravity, and",
-        "Codex from one personal manifest, with dry-run review, native config sync,",
-        "lockfile traceability, and doctor verification."
+        "AGHub and GAAL are the key competitors to keep in mind. AGHub wins on broad 22+/23-agent hub positioning and MCP/portable-skill management.",
+        "Use COMPETITIVEIMPROVEMENTPLAN.md as the long-running implementation plan."
       ]
     },
     {
       "id": "ctx-plan-current-findings",
       "title": "PLAN.md: Current Findings",
-      "summary": "README and release copy now avoid stale negative competitor claims and position",
+      "summary": "README and release copy now avoid stale negative competitor claims and position Nexus around verified behavior: one manifest, asset auto-discovery, hook lifecycle/dedupe, MCP review and merge, target filtering,...",
       "source": "PLAN.md#current-findings",
       "source_path": "PLAN.md",
       "kind": "plan",
@@ -665,25 +622,23 @@
         "current-findings"
       ],
       "read_when": [
-        "continuing the active task",
-        "checking done criteria or decisions",
-        "update context with task-local progress"
+        "continuing task-local current findings"
       ],
       "card_path": ".context-harness/cards/ctx-plan-current-findings.md",
       "chunk_path": "",
       "content_sha256": "61970873a0d6b42bfd86265074dd02dd571ae2a718b9951aae5d2763edb6ed98",
       "key_facts": [
-        "README and release copy now avoid stale negative competitor claims and position",
-        "Nexus around verified behavior: one manifest, asset auto-discovery, hook",
-        "lifecycle/dedupe, MCP review and merge, target filtering, lockfile",
-        "traceability, skill metadata overlays, and Context Harness deployment.",
-        "nexus init creates nexus.personal.yml from nexus.example.yml and refuses"
+        "nexus init creates nexus.personal.yml from nexus.example.yml and refuses to overwrite without --force.",
+        "JSON MCP merge preserves unmanaged servers, local-only keys, and existing env secrets when the manifest uses placeholders.",
+        "Codex TOML MCP sync preserves existing env values inside the Nexus managed block when the manifest uses placeholders,...",
+        "Optional MCPs are written to the lockfile only when actually accepted for a sync, so skipped optional entries are not later pruned as stale Nexus-managed...",
+        "Codex TOML MCP pruning now removes stale Nexus-managed sections from the managed block, matching JSON target pruning semantics."
       ]
     },
     {
       "id": "ctx-plan-decisions",
       "title": "PLAN.md: Decisions",
-      "summary": "Keep the Python single-file CLI for this release; the Go rewrite remains a",
+      "summary": "Keep the Python single-file CLI for this release; the Go rewrite remains a later milestone.",
       "source": "PLAN.md#decisions",
       "source_path": "PLAN.md",
       "kind": "plan",
@@ -697,56 +652,22 @@
         "decisions"
       ],
       "read_when": [
-        "continuing the active task",
-        "checking done criteria or decisions",
-        "update context with task-local progress"
+        "continuing task-local decisions"
       ],
       "card_path": ".context-harness/cards/ctx-plan-decisions.md",
       "chunk_path": "",
       "content_sha256": "d851dcc228e2c267d073a1c953f4a61f97d08b4d4dc0cabfd179782b5b0afe3a",
       "key_facts": [
-        "Keep the Python single-file CLI for this release; the Go rewrite remains a",
-        "later milestone.",
         "Do not add runtime dependencies beyond PyYAML.",
-        "Do not position Nexus as a replacement for native Codex, Claude, Cursor, or",
-        "Kasetto workflows. It is a repo-local cross-IDE deployment layer."
-      ]
-    },
-    {
-      "id": "ctx-plan-progress",
-      "title": "PLAN.md: Progress",
-      "summary": "[x] Completed competitive roadmap baseline, public docs parity, audit, MCP docs and tests, package trust docs, hook lifecycle hardening, demo assets, clone-based install polish, and subprocess CLI smoke coverage.",
-      "source": "PLAN.md#progress",
-      "source_path": "PLAN.md",
-      "kind": "plan",
-      "scope": "task",
-      "importance": 0.85,
-      "confidence": "confirmed",
-      "recency": "2026-07-08",
-      "tokens_est": 199,
-      "tags": [
-        "plan",
-        "progress"
-      ],
-      "read_when": [
-        "continuing the active task",
-        "checking done criteria or decisions",
-        "update context with task-local progress"
-      ],
-      "card_path": ".context-harness/cards/ctx-plan-progress.md",
-      "chunk_path": "",
-      "content_sha256": "2d8f6dac9a006751227876efd0a4a577a6a112ed4fa6a84c4975f138eae7ab7f",
-      "key_facts": [
-        "[x] Completed competitive roadmap baseline, public docs parity, audit, MCP docs and tests, package trust docs, hook lifecycle hardening, demo assets, clone-b...",
-        "[x] Added package-level targets and skilloverrides, including Codex agents/openai.yaml overlays materialized under .nexus/generated/.",
-        "[x] Hardened JSON and Codex MCP merge/prune behavior around local keys, env placeholders, optional MCP lockfile semantics, and content outside the Codex mana...",
-        "[x] Made omitted manifest targets default to the four core native adapters (claude, cursor, antigravity, codex), added 41 skills target presets behind target..."
+        "Do not position Nexus as a replacement for native Codex, Claude, Cursor, or Kasetto workflows. It is a repo-local cross-IDE deployment layer.",
+        "Use nexus.personal.yml locally for machine-specific packages, targets, MCPs, and pre-release local path testing. Keep secrets out of public docs and examples.",
+        "For release verification, validate the sibling local Context Harness release candidate with path:..."
       ]
     },
     {
       "id": "ctx-plan-follow-ups",
       "title": "PLAN.md: Follow-Ups",
-      "summary": "Before publishing, switch any local-only path: ../context-harness release",
+      "summary": "Before publishing, switch any local-only path: ../context-harness release validation back to the public repo/ref after Context Harness is pushed.",
       "source": "PLAN.md#follow-ups",
       "source_path": "PLAN.md",
       "kind": "plan",
@@ -760,19 +681,14 @@
         "follow-ups"
       ],
       "read_when": [
-        "continuing the active task",
-        "checking done criteria or decisions",
-        "update context with task-local progress"
+        "continuing task-local follow-ups"
       ],
       "card_path": ".context-harness/cards/ctx-plan-follow-ups.md",
       "chunk_path": "",
       "content_sha256": "2ef6d5bf7df65a5f35816114e291a3616d0d0d005feac6ffe77b89dce67decd4",
       "key_facts": [
-        "Before publishing, switch any local-only path: ../context-harness release",
-        "validation back to the public repo/ref after Context Harness is pushed.",
-        "Keep competitor line-item claims out of launch copy unless re-verified against",
-        "current public docs immediately before publishing.",
-        "If commands/agents deployment becomes real instead of lockfile-only discovery,"
+        "Keep competitor line-item claims out of launch copy unless re-verified against current public docs immediately before publishing.",
+        "If commands/agents deployment becomes real instead of lockfile-only discovery, update README and demo docs."
       ]
     },
     {
@@ -792,25 +708,23 @@
         "verification"
       ],
       "read_when": [
-        "continuing the active task",
-        "checking done criteria or decisions",
-        "update context with task-local progress"
+        "continuing task-local verification"
       ],
       "card_path": ".context-harness/cards/ctx-plan-verification.md",
       "chunk_path": ".context-harness/chunks/ctx-plan-verification.md",
       "content_sha256": "b34a2b34d19acbee37df0593f123dc946933543bd47d0c64dd91961b4e90cb20",
       "key_facts": [
-        "python -m pytest tests/testnexus.py exits 0 with 73 passed after broad target expansion and simplification review.",
         "python -m pycompile nexus.py exits 0 after broad target expansion and simplification review.",
-        "Temp-home CLI smoke confirms omitted targets audit lists the four core targets and targets: [\"\"] audit lists 41 target presets including hermes, qwen-code, a...",
+        "Temp-home CLI smoke confirms omitted targets audit lists the four core targets and targets: [\"\"] audit lists 41 target presets including hermes, qwen-code,...",
         "python -m pytest tests/testnexus.py exits 0 with 64 passed after default platform parity changes.",
-        "python -m pycompile nexus.py exits 0 after default platform parity changes."
+        "python -m pycompile nexus.py exits 0 after default platform parity changes.",
+        "Temp-home CLI smoke with omitted targets confirms audit --json --redact-home lists claude, cursor, antigravity, and codex;..."
       ]
     },
     {
       "id": "ctx-plan-archive",
       "title": "PLAN.md: Archive",
-      "summary": "Earlier 2026 work replaced the APM/deploy.sh workflow with Nexus, added cache",
+      "summary": "Earlier 2026 work replaced the APM/deploy.sh workflow with Nexus, added cache snapshots, auto-discovery, hook dedupe, inline MCPs, lockfiles, Codex hook support, sparse hidden skill discovery, target filtering,...",
       "source": "PLAN.md#archive",
       "source_path": "PLAN.md",
       "kind": "plan",
@@ -818,25 +732,23 @@
       "importance": 0.85,
       "confidence": "confirmed",
       "recency": "2026-07-08",
-      "tokens_est": 1091,
+      "tokens_est": 1308,
       "tags": [
         "plan",
         "archive"
       ],
       "read_when": [
-        "continuing the active task",
-        "checking done criteria or decisions",
-        "update context with task-local progress"
+        "continuing task-local archive"
       ],
       "card_path": ".context-harness/cards/ctx-plan-archive.md",
       "chunk_path": ".context-harness/chunks/ctx-plan-archive.md",
-      "content_sha256": "e9f443ed97c28ef6db781223f2b2c6458a5b89f3a8c31e3294bedebaf1352ec9",
+      "content_sha256": "a9af5a9972e029cb8bf896fbd4e94e5919234af99462fbdc8c4760e360eed140",
       "key_facts": [
-        "Earlier 2026 work replaced the APM/deploy.sh workflow with Nexus, added cache",
-        "snapshots, auto-discovery, hook dedupe, inline MCPs, lockfiles, Codex hook",
-        "support, sparse hidden skill discovery, target filtering, and package updates.",
-        "Historical deployment notes mention old Context Harness skills such as",
-        "context-launch, context-handoff, and context-grill; those are superseded"
+        "Historical deployment notes mention old Context Harness skills such as context-launch, context-handoff, and context-grill;...",
+        "The Go rewrite, nexus add, nexus update, shell completions, and binary distribution remain future work, not release blockers for the Python CLI.",
+        "Completed competitive roadmap Phase 0 baseline: read required context/code/docs, captured CLI help, checked gitignored local-only files,...",
+        "Added public docs for target/resource support, manifest fields, package behavior, and honest comparison positioning. (archived 2026-07-07)",
+        "Added copyable example manifests for minimal, Context Harness, MCP-only, team, and package-overlay setups. (archived 2026-07-07)"
       ]
     }
   ]

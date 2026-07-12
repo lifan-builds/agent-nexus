@@ -13,6 +13,7 @@ Use these screenshots to support launch pages, README assets, or issue replies.
 - `nexus doctor` showing healthy target checks.
 - `docs/assets/dashboard-hero.png` showing the refreshed localhost dashboard overview.
 - `docs/assets/dashboard-management.png` showing target policy or platform health with confirmed deploy controls.
+- `docs/assets/dashboard-mobile.png` showing the responsive workflow and label/value management layout.
 
 ## README Diagram Assets
 

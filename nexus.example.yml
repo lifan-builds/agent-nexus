@@ -2,8 +2,9 @@
 # Defines packages, MCP servers, and target IDEs for cross-platform deployment.
 # Run `nexus sync` to fetch, compile, and deploy all assets.
 #
-# Copy this file to a gitignored personal manifest and customize for your setup:
-#   cp nexus.example.yml nexus.personal.yml
+# Create this comprehensive example explicitly, then customize it:
+#   nexus init --template example
+# The default `nexus init` creates a safer empty starter.
 
 name: agent-nexus
 version: 1.0.0

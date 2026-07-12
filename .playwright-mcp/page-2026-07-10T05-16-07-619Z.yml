@@ -1,0 +1,36 @@
+- generic [active] [ref=f1e1]:
+  - link "Skip to dashboard content" [ref=f1e2] [cursor=pointer]:
+    - /url: "#mainContent"
+  - banner [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - generic [ref=f1e10]:
+        - heading "Review your agent workspace" [level=1] [ref=f1e11]
+        - paragraph [ref=f1e12]: Inspect packages, target health, and deploy readiness before Nexus writes native config.
+        - generic [ref=f1e13]: Loading local Nexus state...
+        - generic "Dashboard safety properties" [ref=f1e14]:
+          - generic [ref=f1e15]: localhost only
+          - generic [ref=f1e16]: redacted secrets
+          - generic [ref=f1e17]: confirmed deploys
+      - generic [ref=f1e18]:
+        - button "Refresh state" [ref=f1e19] [cursor=pointer]
+        - button "Deploy reviewed plan" [disabled] [ref=f1e20] [cursor=pointer]
+  - main [ref=f1e21]:
+    - status [ref=f1e22]
+    - alert [ref=f1e23]
+    - generic "Agent Nexus workflow"
+    - group [ref=f1e24]:
+      - generic [ref=f1e25] [cursor=pointer]:
+        - generic [ref=f1e26]:
+          - strong [ref=f1e27]: Latest dashboard action
+          - text: dry-run and deploy output
+        - text: Open
+    - tablist "Dashboard views" [ref=f1e28]:
+      - tab [selected] [ref=f1e29] [cursor=pointer]:
+        - strong [ref=f1e30]: Packages
+      - tab [ref=f1e31] [cursor=pointer]:
+        - strong [ref=f1e32]: Targets
+      - tab [ref=f1e33] [cursor=pointer]:
+        - strong [ref=f1e34]: Health
+      - tab [ref=f1e35] [cursor=pointer]:
+        - strong [ref=f1e36]: Manifest
+    - tabpanel "Packages" [ref=f1e37]

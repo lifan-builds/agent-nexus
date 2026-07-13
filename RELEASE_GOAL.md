@@ -32,10 +32,8 @@ or global IDE configuration.
 
 ## Context To Read First
 
-- `NOW.md`
 - `AGENTS.md`
-- `CONTEXT.md`
-- `PLAN.md`
+- `.trellis/spec/agent-nexus/index.md`
 - `PLANS.md` if present
 - `FINDINGS.md`
 - `EVALUATION.md`
@@ -122,12 +120,12 @@ Manual checks:
   clear and safe.
 - Ask only for human-judgment blockers, secrets, destructive operations, or
   publishing decisions.
-- Keep `PLAN.md`/`PLANS.md` and `NOW.md` current after meaningful progress.
+- Keep task-local progress in Trellis task artifacts; keep long-running product
+  history in `PLANS.md` and focused documentation.
 
 ## Closeout
 
-- Update `PLAN.md` or `PLANS.md` with release findings, decisions, and
-  verification.
-- Update `CONTEXT.md` only for durable terms, rules, or invariants.
-- If `CONTEXT.md` changes, run `node scripts/context-index.js update`.
-- Rewrite `NOW.md` with current focus, blockers, next step, and touched files.
+- Update `PLANS.md` or focused product documentation with durable release
+  findings, decisions, and verification.
+- Update `.trellis/spec/agent-nexus/` only for reusable engineering rules or
+  invariants; keep transient state in Trellis task/workspace records.

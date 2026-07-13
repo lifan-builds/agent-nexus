@@ -1,13 +1,9 @@
 # Agent Domain Docs
 
-This repo uses a single-context domain-doc layout.
+This repository uses Trellis as its single project-local context and task owner.
 
-`CONTEXT.md` at the repository root is the canonical project memory. Matt Pocock's engineering skills should read it for project language, architectural constraints, workflow expectations, and durable lessons.
-
-`NOW.md` is short-lived session state maintained by context-harness. Use it for recovery, not durable decisions.
-
-`PLAN.md` is task-local planning state. Use it when a multi-step task is active.
+Durable Agent Nexus engineering rules live under `.trellis/spec/agent-nexus/`. Trellis task artifacts hold task-local requirements, plans, evidence, and handoff state; long-running product history remains in `PLANS.md`, `FINDINGS.md`, and focused documentation.
 
 Architectural decisions should live under `docs/adr/` if they are hard to reverse, surprising later, and involve a real trade-off. If no ADR exists for an area, do not infer one from surrounding prose.
 
-Do not create a separate Matt-specific context file. Context-harness owns the project memory files; Matt's skills consume them.
+Do not create a separate Matt-specific context file. Matt Pocock's engineering skills should consume the relevant Trellis specifications and task context. Context Harness remains a supported Agent Nexus package for deployment to other repositories, but it does not own this repository's local context.

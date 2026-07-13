@@ -150,6 +150,7 @@
     ".trellis/scripts/init_developer.py": "f9e6c0d882406e81c8cd6b1c5abb204b0befc0069ff89cf650cd536a80f8c60e",
     ".trellis/scripts/task.py": "46a94e4acf1c967fe5c3606ba5d1572cd0c43033a16fe01de55ac568954e6c18",
     ".trellis/workflow.md": "9eb806e50767409b26dba4a63f34bc8cf58a8affcc18fe83e47568b5aca23510",
-    "AGENTS.md": "6cacfe99748b435d0660c2463c697bc323d53798aecf3492283ca8eac1b29682"
+    "AGENTS.md": "6cacfe99748b435d0660c2463c697bc323d53798aecf3492283ca8eac1b29682",
+    ".claude/settings.json": "735ac0cd6c2162b8b972953e84f26287a5ade0f71637d4b13817a5348b04c96c"
   }
 }

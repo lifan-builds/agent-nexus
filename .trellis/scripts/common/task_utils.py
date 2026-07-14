@@ -17,7 +17,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from .paths import get_repo_root, get_tasks_dir
+from .io import read_json
+from .paths import FILE_TASK_JSON, get_repo_root, get_tasks_dir
 
 
 # =============================================================================
@@ -72,14 +73,15 @@ def is_safe_task_path(task_path: str, repo_root: Path | None = None) -> bool:
 def is_within_tasks_dir(task_dir_abs: Path, repo_root: Path | None = None) -> bool:
     """Check that a resolved task directory really is a task under the tasks dir.
 
-    A real task lives directly at ``.trellis/tasks/<name>``. This returns True
-    only when ``task_dir_abs`` is an immediate child of the tasks directory.
+    A real task lives directly at ``.trellis/tasks/<name>`` and contains a
+    parseable JSON object at ``task.json``. This returns True only for such an
+    immediate child, excluding the reserved ``archive`` container.
 
     Guards archive: ``resolve_task_dir`` falls back to ``repo_root/<name>`` for
     an unknown name, so a mistyped ``task.py archive src`` resolves to the real
     ``src/`` source directory. Without this check archive would ``shutil.move``
-    it out of the repo. Also rejects the tasks dir itself and anything nested
-    under ``archive/`` (already-archived tasks).
+    it out of the repo. Also rejects arbitrary direct children and anything
+    nested under ``archive/`` (already-archived tasks).
     """
     if repo_root is None:
         repo_root = get_repo_root()
@@ -88,7 +90,9 @@ def is_within_tasks_dir(task_dir_abs: Path, repo_root: Path | None = None) -> bo
         tasks_resolved = get_tasks_dir(repo_root).resolve()
     except (OSError, RuntimeError):
         return False
-    return resolved.parent == tasks_resolved
+    if resolved.parent != tasks_resolved or resolved.name == "archive":
+        return False
+    return isinstance(read_json(resolved / FILE_TASK_JSON), dict)
 
 
 # =============================================================================

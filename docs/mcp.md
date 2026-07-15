@@ -64,11 +64,13 @@ Headers are copied into supported target config shapes. Treat header values as s
 
 ## Browser Tooling Policy
 
-Use one browser path for each job instead of enabling overlapping tools by default:
+Use one browser path for each job and apply this routing order:
 
-- **Kimi WebBridge** should be deployed as a package-managed skill for explicitly requested interaction with the user's real browser, open tabs, and existing login sessions. Apply manual-only skill metadata for this privileged path.
-- **Playwright MCP** belongs under `optional_mcps` for isolated, reproducible browser automation and end-to-end testing.
-- **Chrome DevTools MCP** is not a default Nexus-managed server. Keep it target-local and install it only for focused Lighthouse, performance trace, Core Web Vitals, or heap diagnostics.
+1. Use built-in **WebSearch/WebFetch** for ordinary research and static page retrieval.
+2. Use **Kimi WebBridge** for interaction with the user's real browser, open tabs, existing login sessions, dynamic pages, or screenshots.
+3. Use **Chrome DevTools MCP** only for focused Lighthouse, performance-trace, Core Web Vitals, or heap diagnostics, or when the user explicitly requests it. Keep it target-local rather than Nexus-managed by default.
+
+**Playwright MCP** belongs under `optional_mcps` for isolated, reproducible browser automation and end-to-end testing.
 
 When Playwright was managed by a previous sync and is declined later, it is omitted from the accepted MCP set and pruned using the previous lockfile.
 

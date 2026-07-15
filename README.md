@@ -209,11 +209,13 @@ Use `--no-open` when you want the server URL without automatically opening a bro
 
 ## Browser tooling policy
 
-Keep browser access narrow and intentional:
+Keep browser access narrow and intentional, using this routing order:
 
-- **Kimi WebBridge** is a package-managed skill for explicitly requested work in the user's real browser and existing login sessions. Keep model invocation disabled unless the user asks for real-browser control.
-- **Playwright MCP** is optional and suited to isolated, reproducible browser automation and end-to-end testing. Put it under `optional_mcps` rather than enabling it for every sync.
-- **Chrome DevTools MCP** is not a default Nexus-managed server. Install it locally only for focused Lighthouse, performance trace, Core Web Vitals, or heap diagnostics.
+1. Use built-in **WebSearch/WebFetch** for ordinary research and static page retrieval.
+2. Use **Kimi WebBridge** when the user's real browser, existing login sessions, interactive controls, dynamic pages, or screenshots are required.
+3. Use **Chrome DevTools MCP** only for focused Lighthouse, performance-trace, Core Web Vitals, or heap diagnostics, or when the user explicitly requests it. Keep it target-local rather than Nexus-managed by default.
+
+**Playwright MCP** remains optional for isolated, reproducible browser automation and end-to-end testing. Put it under `optional_mcps` rather than enabling it for every sync.
 
 See [docs/mcp.md](docs/mcp.md) for configuration and pruning behavior.
 

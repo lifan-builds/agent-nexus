@@ -77,6 +77,21 @@ Keep Peekaboo's Claude-only MCP registration in Claude Code's native MCP configu
 
 When Playwright was managed by a previous sync and is declined later, it is omitted from the accepted MCP set and pruned using the previous lockfile.
 
+## Repository-Scoped MCPs
+
+Agent Nexus currently applies every accepted shared `mcps` declaration to every configured MCP-capable target. It does not filter an individual MCP by repository, and a package-level `targets` filter affects package assets such as skills rather than MCP deployment.
+
+Capabilities that must exist only inside one repository therefore belong in the host's native project configuration, not the shared Nexus manifest:
+
+| Capability | Owning repository | Project scope |
+| --- | --- | --- |
+| `nitan` | `/Users/lfan/Project/agent` | `.mcp.json`, `.cursor/mcp.json`, `.agents/mcp_config.json`, and `.codex/config.toml` |
+| `robinhood-trading` | `/Users/lfan/Project/moonshot` | The same four native project surfaces, using the public Robinhood endpoint |
+
+Nitan credentials remain in a permission-restricted external file loaded by the Agent repository's launcher. Robinhood OAuth/session state remains host-owned and external. Do not add either server back to shared `mcps` as a fallback for project approval, repository trust, unavailable host CLIs, or OAuth limitations.
+
+To migrate or roll back this boundary, review name-only previous-lock and target inventories before the normal `sync --dry-run` → `sync --yes` → `doctor` sequence. Restore global declarations first during rollback, then remove project entries; never hand-edit generated global target files.
+
 ## Per-Target Output Formats
 
 ### Claude Code

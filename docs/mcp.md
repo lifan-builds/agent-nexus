@@ -64,11 +64,14 @@ Headers are copied into supported target config shapes. Treat header values as s
 
 ## Browser Tooling Policy
 
-Use one browser path for each job and apply this routing order:
+Use one browser or desktop-control path for each job and apply this routing order:
 
 1. Use built-in **WebSearch/WebFetch** for ordinary research and static page retrieval.
 2. Use **Kimi WebBridge** for interaction with the user's real browser, open tabs, existing login sessions, dynamic pages, or screenshots.
-3. Use **Chrome DevTools MCP** only for focused Lighthouse, performance-trace, Core Web Vitals, or heap diagnostics, or when the user explicitly requests it. Keep it target-local rather than Nexus-managed by default.
+3. Use **Chrome DevTools MCP** for focused Lighthouse, performance-trace, Core Web Vitals, or heap diagnostics, explicit requests, or browser cases Kimi cannot complete. Keep it target-local rather than Nexus-managed by default.
+4. Use **Peekaboo** only as the final native macOS desktop fallback when narrower paths are unavailable, have failed, or cannot address browser chrome, windows, menus, dialogs, permissions, or non-browser applications.
+
+Keep Peekaboo's Claude-only MCP registration in Claude Code's native MCP configuration. Nexus currently applies every accepted shared `mcps` declaration to every configured MCP-capable target; package-level `targets: [claude]` can constrain the related documentation skill but do not filter MCP deployment.
 
 **Playwright MCP** belongs under `optional_mcps` for isolated, reproducible browser automation and end-to-end testing.
 

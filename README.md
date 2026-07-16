@@ -209,11 +209,14 @@ Use `--no-open` when you want the server URL without automatically opening a bro
 
 ## Browser tooling policy
 
-Keep browser access narrow and intentional, using this routing order:
+Keep browser and desktop access narrow and intentional, using this routing order:
 
 1. Use built-in **WebSearch/WebFetch** for ordinary research and static page retrieval.
 2. Use **Kimi WebBridge** when the user's real browser, existing login sessions, interactive controls, dynamic pages, or screenshots are required.
-3. Use **Chrome DevTools MCP** only for focused Lighthouse, performance-trace, Core Web Vitals, or heap diagnostics, or when the user explicitly requests it. Keep it target-local rather than Nexus-managed by default.
+3. Use **Chrome DevTools MCP** for focused Lighthouse, performance-trace, Core Web Vitals, or heap diagnostics, explicit requests, or browser cases Kimi cannot complete. Keep it target-local rather than Nexus-managed by default.
+4. Use **Peekaboo** only as the final native macOS desktop fallback when narrower paths are unavailable, have failed, or cannot address browser chrome, windows, menus, dialogs, permissions, or non-browser applications.
+
+Keep Peekaboo's Claude-only MCP registration target-local. Nexus currently applies every shared `mcps` declaration to every configured MCP-capable target; use a package-level `targets: [claude]` filter for its documentation skill without treating that as MCP target filtering.
 
 **Playwright MCP** remains optional for isolated, reproducible browser automation and end-to-end testing. Put it under `optional_mcps` rather than enabling it for every sync.
 

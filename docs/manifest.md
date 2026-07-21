@@ -190,7 +190,24 @@ mcps:
     args: ["-y", "@upstash/context7-mcp@latest"]
 ```
 
-Nexus resolves `npx` and `node` to an absolute command path when possible and adds a standard `PATH` env value if one is not provided.
+Nexus resolves `npx` and `node` to an absolute command path when possible. When `env` is omitted, Nexus adds a standard `PATH` value for restricted agent environments; declare `env: {}` explicitly when an absolute launcher must retain an empty environment mapping.
+
+### MCP target filter
+
+Limit an MCP to selected top-level targets:
+
+```yaml
+mcps:
+  - name: browser
+    command: /absolute/path/to/browser-launcher
+    args: []
+    env: {}
+    targets: [claude, cursor, antigravity]
+```
+
+The target list is canonicalized and intersected with top-level `targets`. If omitted, the MCP inherits all configured targets that have implemented MCP writers. Unknown or MCP-unsupported target names and duplicate canonical targets are rejected. The resolved target set is printed during preview, recorded in the lockfile, and used to prune only previously managed target registrations when the filter contracts.
+
+MCP target filters select hosts, not repositories. Keep repository-only servers in each host's native project configuration.
 
 ### SSE MCP
 
@@ -227,7 +244,7 @@ mcps:
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
 ```
 
-When the target config already has a real local value for the same env key, Nexus preserves that local value instead of replacing it with the placeholder. Nexus also preserves local-only env keys that are not mentioned by the manifest.
+When the target config already has a real local value for the same env key, Nexus preserves that local value instead of replacing it with the placeholder. Nexus also preserves local-only env keys that are not mentioned by a non-empty manifest mapping. An explicit `env: {}` is a complete empty shape and clears stale env keys on that managed server.
 
 ### Headers and OAuth metadata
 

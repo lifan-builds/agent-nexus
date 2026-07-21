@@ -88,7 +88,8 @@ For JSON MCP config targets, Nexus:
 - preserves local-only keys on an existing server entry,
 - preserves existing env values when the manifest value is a placeholder such
   as `${GITHUB_TOKEN}`,
-- keeps local env keys that are not mentioned in the manifest.
+- keeps local env keys that are not mentioned by a non-empty manifest mapping,
+  while explicit `env: {}` clears stale env keys on that managed server.
 
 For Codex TOML config, Nexus writes only between:
 

@@ -67,6 +67,8 @@ mcps:
   - name: context7
     command: npx
     args: ["-y", "@upstash/context7-mcp@latest"]
+    # Optional: deploy this MCP only to selected top-level targets.
+    # targets: [claude, cursor, antigravity]
     # Optional dashboard-only cost metadata. Nexus does not track live billing.
     # cost:
     #   note: "Estimate only; actual cost depends on model/tool usage."

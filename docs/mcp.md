@@ -13,7 +13,7 @@ mcps:
     args: ["-y", "@upstash/context7-mcp@latest"]
 ```
 
-If `command` is omitted, Nexus defaults to `npx`. For `npx` and `node`, Nexus resolves the command to an absolute path when possible. If `env.PATH` is not provided, Nexus adds a standard PATH value for restricted agent environments.
+If `command` is omitted, Nexus defaults to `npx`. For `npx` and `node`, Nexus resolves the command to an absolute path when possible. When `env` is omitted, Nexus adds a standard PATH value for restricted agent environments; explicit `env: {}` preserves an empty environment mapping.
 
 ### SSE URL servers
 
@@ -62,16 +62,32 @@ mcps:
 
 Headers are copied into supported target config shapes. Treat header values as sensitive if they contain tokens.
 
+## Per-MCP Target Filters
+
+Use `targets` on an MCP declaration to deploy it only to selected top-level targets:
+
+```yaml
+mcps:
+  - name: local-browser
+    command: /absolute/path/to/launcher
+    args: []
+    env: {}
+    targets: [claude, cursor, antigravity]
+```
+
+The filter is canonicalized and intersected with the manifest's top-level targets. Omitting it preserves the original behavior and deploys the server to every configured target with an implemented MCP writer. `targets: []` deploys nowhere. Unknown or MCP-unsupported names and duplicate canonical targets fail manifest validation.
+
+The lockfile records the resolved target list for every managed MCP. On a later sync, removing a target from one MCP prunes that previously managed server only from the newly excluded host; unrelated and unmanaged servers remain intact. The dry-run and security review print each MCP's resolved target list so a scope change is visible before deployment.
+
+Package-level `targets` remains independent: it filters discovered package assets such as skills and does not affect a separate MCP declaration. Likewise, MCP target filters select hosts rather than repositories.
+
+For an absolute launcher that must preserve an empty environment mapping, declare `env: {}` explicitly. Omitting `env` retains Nexus's standard PATH injection for restricted agent environments.
+
 ## Browser Tooling Policy
 
-Use one browser or desktop-control path for each job and apply this routing order:
+Use one browser or desktop-control path for each job. Prefer built-in web retrieval for static research; use a pinned existing-profile browser MCP such as Playwriter only for dynamic/authenticated work in an explicitly selected task-owned page; keep Chrome DevTools task-local for bounded diagnostics; and use a native controller such as Peekaboo only when the browser layer is insufficient. Retired Kimi WebBridge remains absent from the manifest, managed targets, package/runtime state, and active routing; restoring it requires a fresh explicit installation and security review.
 
-1. Use built-in **WebSearch/WebFetch** for ordinary research and static page retrieval.
-2. Use **Kimi WebBridge** for interaction with the user's real browser, open tabs, existing login sessions, dynamic pages, or screenshots.
-3. Use **Chrome DevTools MCP** for focused Lighthouse, performance-trace, Core Web Vitals, or heap diagnostics, explicit requests, or browser cases Kimi cannot complete. Keep it target-local rather than Nexus-managed by default.
-4. Use **Peekaboo** only as the final native macOS desktop fallback when narrower paths are unavailable, have failed, or cannot address browser chrome, windows, menus, dialogs, permissions, or non-browser applications.
-
-Keep Peekaboo's Claude-only MCP registration in Claude Code's native MCP configuration. Nexus currently applies every accepted shared `mcps` declaration to every configured MCP-capable target; package-level `targets: [claude]` can constrain the related documentation skill but do not filter MCP deployment.
+Reusable browser or native MCPs may be Nexus-managed with explicit per-MCP targets, while project-only diagnostics stay in native target configuration. Preserve each controller's own least-authority launcher, selected-page or native-permission contract, and rollback procedure; a target filter narrows host deployment but does not narrow runtime authority. Never run multiple controllers against the same state merely because multiple hosts can discover them.
 
 **Playwright MCP** belongs under `optional_mcps` for isolated, reproducible browser automation and end-to-end testing.
 
@@ -79,7 +95,7 @@ When Playwright was managed by a previous sync and is declined later, it is omit
 
 ## Repository-Scoped MCPs
 
-Agent Nexus currently applies every accepted shared `mcps` declaration to every configured MCP-capable target. It does not filter an individual MCP by repository, and a package-level `targets` filter affects package assets such as skills rather than MCP deployment.
+Agent Nexus can filter an MCP by target host, but it does not filter an individual MCP by repository. A package-level `targets` filter affects package assets such as skills rather than MCP deployment.
 
 Capabilities that must exist only inside one repository therefore belong in the host's native project configuration, not the shared Nexus manifest:
 
@@ -181,7 +197,8 @@ For JSON targets, Nexus:
 - preserves unmanaged MCP servers not declared in the manifest,
 - preserves local-only top-level Claude Code state and keys on existing server entries,
 - preserves local env values when the manifest uses placeholders,
-- preserves local-only env keys not mentioned by the manifest.
+- preserves local-only env keys not mentioned by a non-empty manifest mapping, and
+- treats explicit `env: {}` as a complete empty shape, clearing stale env keys on that managed server.
 
 For Codex, Nexus:
 
@@ -194,7 +211,7 @@ JSON files are rewritten with two-space indentation. TOML content inside the Cod
 
 ## Managed And Unmanaged Entries
 
-Nexus treats MCPs listed in the active manifest and accepted optional MCPs as managed for that sync. The lockfile records managed MCP names after a real sync.
+Nexus treats MCPs listed in the active manifest and accepted optional MCPs as managed for that sync. The lockfile records each managed MCP name and its resolved target list after a real sync.
 
 Unmanaged entries are existing target config entries not listed in the manifest or lockfile-managed set. Nexus preserves them during normal sync.
 
@@ -202,9 +219,9 @@ Skipped optional MCPs are not recorded as managed, so Nexus will not prune a ser
 
 ## Stale Managed MCP Pruning
 
-When a previous lockfile says Nexus managed an MCP, and the current accepted manifest no longer includes it, Nexus removes that stale managed MCP from target config.
+When a previous lockfile says Nexus managed an MCP, and the current accepted manifest no longer includes it for a target, Nexus removes that stale managed MCP from that target config. This covers both full removal and per-MCP target contraction.
 
-For JSON targets, it deletes the stale server key from `mcpServers`.
+For JSON targets, it deletes the stale server key from `mcpServers` only on affected hosts.
 
 For Codex, it removes the stale section only from the Nexus managed TOML block.
 
@@ -215,8 +232,8 @@ Before writing MCP config, `nexus sync` prints the commands or URLs that will be
 ```text
 ==> Security review - MCP servers to be registered:
 
-    context7                       stdio: npx -y @upstash/context7-mcp@latest
-    docs                           sse: https://example.com/mcp
+    context7                       stdio: npx -y @upstash/context7-mcp@latest -> claude,cursor,antigravity,codex
+    docs                           sse: https://example.com/mcp -> claude,cursor
 ```
 
 Without `--yes`, Nexus asks for confirmation before applying a real sync. `sync --dry-run` prints the same review and exits before writing target config or lockfiles.

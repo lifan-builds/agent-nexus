@@ -8,7 +8,7 @@ Use placeholders in tracked examples. Tests that need personal configuration mus
 
 ## Merge ownership
 
-- JSON MCP sync preserves existing server keys by merging rather than replacing local values (`Deployer._sync_mcps_for_target` and `_merge_mcp_entry`).
+- JSON MCP sync preserves existing server keys by merging rather than replacing local values (`Deployer._sync_mcps_for_target` and `_merge_mcp_entry`); explicit `env: {}` is the narrow exception and clears stale env keys on that managed server.
 - Codex MCP sync owns only the `BEGIN/END NEXUS MANAGED MCP SERVERS` block and preserves content outside it (`_sync_mcps_for_codex`, `_strip_codex_managed_block`).
 - Codex hook sync strips only commands marked `--nexus-package`, preserves unmanaged entries, substitutes package roots, and deduplicates (`_merge_codex_hooks`).
 - Cursor product hooks are merged and deduplicated by normalized content (`_merge_hooks`). Claude product hook filename collisions or unverified overwrites fail closed (`deploy_hooks`).

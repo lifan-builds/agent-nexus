@@ -9,6 +9,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Safe minimal `nexus init` starter and explicit example template.
 - Installed-package metadata and project-directory discovery.
 - Preview-first clean planning and non-persistent dry-run package inspection.
+- Per-MCP target filters with target-aware preview, lockfile ownership, pruning, audit, and doctor checks.
 - Dashboard lifecycle guidance, manifest editing, revision checks, accessible confirmation, and responsive tables.
 - GitHub community files, CI metadata, quickstart, examples index, and release checklist.
 

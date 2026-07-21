@@ -2,7 +2,7 @@
 
 Agent Nexus has **4 core native targets** and **41 skills target presets**. If `targets` is omitted, Nexus selects the core native targets: Claude Code, Cursor, Google Antigravity, and Codex. Use `targets: ["*"]` to deploy skills to every skills preset.
 
-Broad presets are skills-first. MCP and hooks stay disabled unless Nexus has a tested native writer for that target.
+Broad presets are skills-first. MCP and hooks stay disabled unless Nexus has a tested native writer for that target. An individual MCP declaration may use `targets` to select a subset of the configured targets; omitted MCP targets inherit the top-level target set.
 
 ## Core Native Targets
 

@@ -226,6 +226,38 @@ def validate_target_values(value, field: str = "targets") -> list[dict]:
         })
     return errors
 
+
+def validate_mcp_target_values(value, field: str) -> list[dict]:
+    """Validate MCP filters without weakening broad skills-target support."""
+    errors = validate_target_values(value, field)
+    if errors or value is None or value is False:
+        return errors
+    values = [value] if isinstance(value, str) else value
+    if not isinstance(values, list):
+        return errors
+
+    implemented = set(mcp_target_names())
+    seen = set()
+    for index, target in enumerate(values):
+        if not isinstance(target, str) or not target.strip():
+            continue
+        canonical = canonical_target_name(target)
+        target_field = f"{field}[{index}]"
+        if canonical != "*" and canonical not in implemented:
+            errors.append({
+                "field": target_field,
+                "message": f"Target '{target}' does not have an implemented MCP writer.",
+            })
+            continue
+        if canonical in seen:
+            errors.append({
+                "field": target_field,
+                "message": f"Duplicate MCP target resolves to '{canonical}'.",
+            })
+            continue
+        seen.add(canonical)
+    return errors
+
 # Standard PATH for MCP env (restricted environments may lack it)
 STANDARD_PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
@@ -608,6 +640,31 @@ def apply_package_filters(discovery: dict, pkg_spec: dict) -> dict:
 def package_targets(pkg: dict, default_targets: list[str]) -> list[str]:
     configured = pkg.get("targets")
     defaults = canonical_targets(default_targets)
+    if configured is None:
+        return defaults
+    requested = canonical_targets(configured)
+    default_set = set(defaults)
+    return [target for target in requested if target in default_set]
+
+
+def mcp_target_names() -> list[str]:
+    """Return targets with implemented MCP configuration writers."""
+    return [
+        name
+        for name, entry in TARGET_REGISTRY.items()
+        if entry.get("status", {}).get("mcp") == "implemented"
+    ]
+
+
+def mcp_targets(mcp: dict, default_targets: list[str]) -> list[str]:
+    """Return configured MCP targets, constrained to implemented manifest targets."""
+    implemented = set(mcp_target_names())
+    defaults = [
+        target
+        for target in canonical_targets(default_targets)
+        if target not in TARGET_REGISTRY or target in implemented
+    ]
+    configured = mcp.get("targets")
     if configured is None:
         return defaults
     requested = canonical_targets(configured)
@@ -1011,14 +1068,18 @@ class Deployer:
             unchanged("No MCP servers selected; no MCP config files created")
             return
         for target in self.cfg.targets:
+            target_mcps = [mcp for mcp in all_mcps if target in mcp_targets(mcp, self.cfg.targets)]
+            if not target_mcps:
+                unchanged(f"No MCP servers selected for {target}")
+                continue
             mcp_path = self.cfg.mcp_path(target)
             if not mcp_path:
                 continue
             info(f"Syncing MCPs to {mcp_path}...")
             if self.cfg.mcp_format(target) == "codex_toml":
-                self._sync_mcps_for_codex(all_mcps, mcp_path)
+                self._sync_mcps_for_codex(target_mcps, mcp_path)
             else:
-                self._sync_mcps_for_target(all_mcps, mcp_path, target)
+                self._sync_mcps_for_target(target_mcps, mcp_path, target)
 
     def _sync_mcps_for_target(self, all_mcps: list[dict], mcp_path: Path, target: str):
         # Read existing config
@@ -1211,7 +1272,7 @@ class Deployer:
                 command = resolved
 
         env = dict(mcp.get("env") or {})
-        if "PATH" not in env:
+        if "env" not in mcp and "PATH" not in env:
             env["PATH"] = STANDARD_PATH
         return {"type": "stdio", "command": command, "args": mcp.get("args", []), "env": env}
 
@@ -1223,7 +1284,11 @@ class Deployer:
 
         merged = dict(existing)
         for key, value in desired.items():
-            if key == "env" and isinstance(value, dict):
+            if key == "env" and value == {}:
+                # An explicit empty manifest env is a complete shape, not an
+                # invitation to retain stale PATH or secret-bearing local keys.
+                merged[key] = {}
+            elif key == "env" and isinstance(value, dict):
                 merged[key] = cls._merge_mcp_env(existing.get(key), value)
             else:
                 merged[key] = value
@@ -1247,19 +1312,31 @@ class Deployer:
                 merged[key] = value
         return merged
 
-    def prune_mcps(self, current_names: set[str], prev_lock: dict | None):
-        """Remove MCP entries no longer in the manifest."""
+    def prune_mcps(self, current_mcps: list[dict], prev_lock: dict | None):
+        """Remove previously managed MCPs that no longer target each host."""
         if not prev_lock:
             return
-        prev_names = set()
-        for entry in prev_lock.get("mcps", {}).get("managed", []):
-            prev_names.add(entry["name"])
-
-        stale = prev_names - current_names
-        if not stale:
-            return
+        previous = [
+            entry
+            for entry in prev_lock.get("mcps", {}).get("managed", [])
+            if isinstance(entry, dict) and entry.get("name")
+        ]
 
         for target in self.cfg.targets:
+            previous_names = {
+                entry["name"]
+                for entry in previous
+                if target in mcp_targets(entry, self.cfg.targets)
+            }
+            current_names = {
+                mcp["name"]
+                for mcp in current_mcps
+                if target in mcp_targets(mcp, self.cfg.targets)
+            }
+            stale = previous_names - current_names
+            if not stale:
+                continue
+
             mcp_path = self.cfg.mcp_path(target)
             if not mcp_path or not mcp_path.exists():
                 continue
@@ -1444,7 +1521,10 @@ def generate_lockfile(
         managed_mcps = [mcp for mcp in manifest.get("mcps", []) if not mcp.get("optional")]
 
     for mcp in managed_mcps:
-        entry = {"name": mcp["name"]}
+        entry = {
+            "name": mcp["name"],
+            "targets": mcp_targets(mcp, targets),
+        }
         if mcp.get("optional"):
             entry["optional"] = True
         lock["mcps"]["managed"].append(entry)
@@ -1465,7 +1545,7 @@ def write_lockfile(lock: dict, path: Path):
 # ---------------------------------------------------------------------------
 # Security review
 # ---------------------------------------------------------------------------
-def show_review(all_mcps: list[dict]):
+def show_review(all_mcps: list[dict], targets: list[str]):
     print(file=sys.stderr)
     info("Security review - MCP servers to be registered:")
     print(file=sys.stderr)
@@ -1477,7 +1557,8 @@ def show_review(all_mcps: list[dict]):
             cmd = mcp.get("command", "npx")
             args = " ".join(mcp.get("args", []))
             detail = f"stdio: {cmd} {args}"
-        print(f"    {name:30s} {detail}", file=sys.stderr)
+        target_label = ",".join(mcp_targets(mcp, targets)) or "none"
+        print(f"    {name:30s} {detail} -> {target_label}", file=sys.stderr)
     print(file=sys.stderr)
 
 
@@ -1675,6 +1756,7 @@ def validate_dashboard_manifest(data: dict) -> list[dict]:
                 errors.append({"field": f"{section}[{index}].name", "message": "MCP name is required"})
             if "url" not in mcp and not mcp.get("command"):
                 errors.append({"field": f"{section}[{index}].command", "message": "MCP command or url is required"})
+            errors.extend(validate_mcp_target_values(mcp.get("targets"), f"{section}[{index}].targets"))
     for index, pkg in enumerate(data.get("packages", []) or []):
         field = f"packages[{index}]"
         if not isinstance(pkg, dict):
@@ -2067,11 +2149,24 @@ def _target_root_path(cfg: Config, target: str) -> Path | None:
     return None
 
 
-def _lock_managed_mcp_names(lock: dict | None) -> set[str]:
+def _lock_managed_mcp_names(
+    lock: dict | None,
+    target: str | None = None,
+    configured_targets: list[str] | None = None,
+) -> set[str]:
     if not lock:
         return set()
     managed = lock.get("mcps", {}).get("managed", []) if isinstance(lock.get("mcps"), dict) else []
-    return {mcp.get("name") for mcp in managed if isinstance(mcp, dict) and mcp.get("name")}
+    if target is None:
+        return {mcp.get("name") for mcp in managed if isinstance(mcp, dict) and mcp.get("name")}
+    defaults = configured_targets or CORE_DEFAULT_TARGETS
+    return {
+        mcp.get("name")
+        for mcp in managed
+        if isinstance(mcp, dict)
+        and mcp.get("name")
+        and target in mcp_targets(mcp, defaults)
+    }
 
 
 def _mcp_transport(entry: dict) -> str:
@@ -2247,9 +2342,9 @@ def _audit_hooks(cfg: Config, target: str) -> dict:
 def build_audit_model(cfg: Config, targets: list[str] | None = None, redact_home: bool = False) -> dict:
     selected_targets = targets or _safe_targets(cfg)
     lock = cfg.load_lockfile()
-    managed_names = _lock_managed_mcp_names(lock)
     target_rows = []
     for target in selected_targets:
+        managed_names = _lock_managed_mcp_names(lock, target, cfg.targets)
         root = _target_root_path(cfg, target)
         target_rows.append({
             "name": target,
@@ -2516,14 +2611,25 @@ def build_dashboard_model(cfg: Config) -> dict:
     lock = cfg.load_lockfile() or {}
     lock_packages = lock.get("packages", []) if isinstance(lock.get("packages", []), list) else []
     managed_mcps = lock.get("mcps", {}).get("managed", []) if isinstance(lock.get("mcps"), dict) else []
-    managed_names = {mcp.get("name") for mcp in managed_mcps if isinstance(mcp, dict) and mcp.get("name")}
+    managed_names = {
+        mcp.get("name")
+        for mcp in managed_mcps
+        if isinstance(mcp, dict) and mcp.get("name")
+    }
     hook_status = inspect_hook_status(cfg)
     target_rows = []
     warnings = []
 
     for target in cfg.targets:
+        target_managed_names = {
+            mcp.get("name")
+            for mcp in managed_mcps
+            if isinstance(mcp, dict)
+            and mcp.get("name")
+            and target in mcp_targets(mcp, cfg.targets)
+        }
         skill_status = inspect_skill_links(cfg, target)
-        mcp_status = inspect_mcp_config(cfg, target, managed_names)
+        mcp_status = inspect_mcp_config(cfg, target, target_managed_names)
         target_hook = hook_status.get(target)
         states = [state for state in [skill_status["status"], mcp_status["status"]] if state != "unsupported"]
         if target_hook and target_hook["status"] != "unsupported":
@@ -3453,7 +3559,7 @@ def cmd_sync(cfg: Config, args):
     }
     plan_hash = hashlib.sha256(json.dumps(plan_payload, sort_keys=True).encode()).hexdigest()
     info(f"Plan: {plan_hash[:12]} (manifest {str(manifest_revision or 'none')[:12]})")
-    show_review(all_mcps)
+    show_review(all_mcps, cfg.targets)
     show_hook_review(discoveries, cfg.targets)
 
     if not getattr(args, "yes", False) and not dry_run and not confirm("Apply this reviewed plan?"):
@@ -3464,6 +3570,9 @@ def cmd_sync(cfg: Config, args):
         info("Dry run - no target configs or lockfiles written. No persistent cache or hooks written.")
         print(file=sys.stderr)
         info("Would deploy:")
+        for mcp in all_mcps:
+            target_label = ",".join(mcp_targets(mcp, cfg.targets)) or "none"
+            print(f"  mcp: {mcp['name']} -> {target_label}", file=sys.stderr)
         for pkg in discoveries:
             targets = package_targets(pkg, cfg.targets)
             target_label = ",".join(targets) or "none"
@@ -3490,7 +3599,7 @@ def cmd_sync(cfg: Config, args):
     info("Deploying hooks...")
     deployer.deploy_hooks(discoveries)
     info("Pruning stale MCPs...")
-    deployer.prune_mcps({m["name"] for m in all_mcps}, prev_lock)
+    deployer.prune_mcps(all_mcps, prev_lock)
     info("Syncing MCP servers...")
     deployer.sync_mcps(all_mcps)
     info("Generating lockfile...")
@@ -3505,6 +3614,8 @@ def cmd_sync(cfg: Config, args):
     skill_summary = ", ".join(f"{target}={count}" for target, count in skill_counts.items())
     mcp_paths = []
     for target in cfg.targets:
+        if not any(target in mcp_targets(mcp, cfg.targets) for mcp in all_mcps):
+            continue
         mcp_path = cfg.mcp_path(target)
         if mcp_path:
             mcp_paths.append(dashboard_path(mcp_path, cfg) or str(mcp_path))
@@ -3662,20 +3773,28 @@ def cmd_doctor(cfg: Config, _args):
         if not mcp_path:
             unchanged(f"{target} MCP config: unsupported")
             continue
+        expected = _lock_managed_mcp_names(lock, target, cfg.targets)
         if not mcp_path.exists():
-            warn(f"{target} MCP config: not found")
+            if lock is not None and not expected:
+                unchanged(f"{target} MCP config: not required, 0 Nexus-managed")
+            else:
+                warn(f"{target} MCP config: not found")
             continue
         try:
             if cfg.mcp_format(target) == "codex_toml":
                 import tomllib
                 with open(mcp_path, "rb") as f:
                     data = tomllib.load(f)
-                count = len(data.get("mcp_servers", {}))
+                names = set(data.get("mcp_servers", {}))
             else:
                 with open(mcp_path) as f:
                     data = json.load(f)
-                count = len(data.get("mcpServers", {}))
-            ok(f"{target} MCP config: {count} servers ({mcp_path})")
+                names = set(data.get("mcpServers", {}))
+            missing = sorted(expected - names)
+            if missing:
+                warn(f"{target} MCP config: missing managed servers {', '.join(missing)} ({mcp_path})")
+            else:
+                ok(f"{target} MCP config: {len(names)} servers, {len(expected)} Nexus-managed ({mcp_path})")
         except (json.JSONDecodeError, OSError, ValueError):
             warn(f"{target} MCP config: invalid config ({mcp_path})")
 
@@ -3796,7 +3915,7 @@ def apply_clean_plan(cfg: Config, plan: dict):
     lock = cfg.load_lockfile()
     if lock:
         deployer = Deployer(cfg)
-        deployer.prune_mcps(set(), lock)
+        deployer.prune_mcps([], lock)
         targets = cfg.safe_targets() if hasattr(cfg, "safe_targets") else cfg.targets
         if "codex" in targets:
             path = cfg.codex_hooks_path()

@@ -139,6 +139,28 @@ def test_cli_smoke_init_audit_sync_dry_run_and_doctor_use_temp_home(tmp_path):
     assert not (codex_home / "hooks.json").exists()
 
 
+def test_sync_dry_run_reports_per_mcp_targets_without_writing(tmp_path, capsys):
+    (tmp_path / "nexus.yml").write_text(
+        "name: scoped-mcp\n"
+        "targets: [claude, cursor, antigravity, codex]\n"
+        "packages: []\n"
+        "mcps:\n"
+        "  - name: browser\n"
+        "    command: /usr/local/bin/browser\n"
+        "    env: {}\n"
+        "    targets: [claude, cursor, antigravity]\n"
+    )
+    cfg = nexus.Config(tmp_path)
+
+    nexus.cmd_sync(cfg, SimpleNamespace(all=False, dry_run=True, yes=False))
+
+    captured = capsys.readouterr()
+    assert "browser" in captured.err
+    assert "-> claude,cursor,antigravity" in captured.err
+    assert "mcp: browser -> claude,cursor,antigravity" in captured.err
+    assert not (tmp_path / "nexus.lock.yml").exists()
+
+
 def test_config_defaults_to_core_targets(tmp_path):
     (tmp_path / "nexus.yml").write_text("name: defaults\npackages: []\nmcps: []\n")
 
@@ -398,7 +420,7 @@ def test_codex_mcp_prune_removes_stale_managed_server_from_toml_block(tmp_path):
     )
 
     deployer.prune_mcps(
-        {"keep"},
+        [{"name": "keep"}],
         {"mcps": {"managed": [{"name": "keep"}, {"name": "stale"}]}},
     )
 
@@ -408,6 +430,67 @@ def test_codex_mcp_prune_removes_stale_managed_server_from_toml_block(tmp_path):
     assert "stale" not in output
     assert "# BEGIN NEXUS MANAGED MCP SERVERS" in output
     assert "# END NEXUS MANAGED MCP SERVERS" in output
+
+
+def test_stdio_mcp_explicit_empty_env_disables_implicit_path():
+    deployer = object.__new__(nexus.Deployer)
+
+    entry = deployer._build_mcp_entry({
+        "name": "local-launcher",
+        "command": "/usr/local/bin/local-launcher",
+        "args": [],
+        "env": {},
+    })
+
+    assert entry == {
+        "type": "stdio",
+        "command": "/usr/local/bin/local-launcher",
+        "args": [],
+        "env": {},
+    }
+
+
+def test_stdio_mcp_explicit_empty_env_clears_stale_existing_values():
+    existing = {
+        "type": "stdio",
+        "command": "/old/launcher",
+        "args": ["old"],
+        "env": {"PATH": nexus.STANDARD_PATH, "LOCAL_ONLY": "stale-secret"},
+    }
+    desired = {
+        "type": "stdio",
+        "command": "/usr/local/bin/local-launcher",
+        "args": [],
+        "env": {},
+    }
+
+    merged = nexus.Deployer._merge_mcp_entry(existing, desired)
+
+    assert merged == desired
+
+
+def test_mcp_sync_respects_per_server_target_filter(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.targets = ["claude", "cursor", "antigravity", "codex"]
+    cfg.data = {"packages": [], "mcps": [], "targets": cfg.targets}
+    paths = {target: tmp_path / f"{target}.json" for target in cfg.targets}
+    paths["codex"] = tmp_path / "codex.toml"
+    cfg.mcp_path = lambda target: paths[target]
+    cfg.mcp_format = lambda target: "codex_toml" if target == "codex" else "mcp_servers_json"
+
+    nexus.Deployer(cfg).sync_mcps([{
+        "name": "browser",
+        "command": "/usr/local/bin/browser",
+        "args": [],
+        "env": {},
+        "targets": ["claude", "cursor", "antigravity"],
+    }])
+
+    for target in ["claude", "cursor", "antigravity"]:
+        servers = json.loads(paths[target].read_text())["mcpServers"]
+        assert servers["browser"]["command"] == "/usr/local/bin/browser"
+        assert servers["browser"]["env"] == {}
+    assert not paths["codex"].exists()
 
 
 def test_json_mcp_sync_adds_stdio_server_to_empty_config(tmp_path):
@@ -454,12 +537,36 @@ def test_json_mcp_prune_removes_only_stale_managed_servers(tmp_path):
     }))
 
     nexus.Deployer(cfg).prune_mcps(
-        {"keep"},
+        [{"name": "keep"}],
         {"mcps": {"managed": [{"name": "keep"}, {"name": "stale"}]}},
     )
 
     servers = json.loads(mcp_path.read_text())["mcpServers"]
     assert sorted(servers) == ["keep", "user"]
+
+
+def test_mcp_prune_removes_server_only_from_newly_excluded_target(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.targets = ["claude", "cursor"]
+    cfg.data = {"packages": [], "mcps": [], "targets": cfg.targets}
+    paths = {target: tmp_path / f"{target}.json" for target in cfg.targets}
+    cfg.mcp_path = lambda target: paths[target]
+    cfg.mcp_format = lambda _target: "mcp_servers_json"
+    for path in paths.values():
+        path.write_text(json.dumps({
+            "mcpServers": {
+                "scoped": {"command": "scoped"},
+                "user": {"command": "user"},
+            }
+        }))
+
+    nexus.Deployer(cfg).prune_mcps(
+        [{"name": "scoped", "targets": ["claude"]}],
+        {"mcps": {"managed": [{"name": "scoped", "targets": ["claude", "cursor"]}]}},
+    )
+
+    assert sorted(json.loads(paths["claude"].read_text())["mcpServers"]) == ["scoped", "user"]
+    assert sorted(json.loads(paths["cursor"].read_text())["mcpServers"]) == ["user"]
 
 
 def test_prune_does_not_remove_skipped_optional_mcp(tmp_path):
@@ -477,7 +584,7 @@ def test_prune_does_not_remove_skipped_optional_mcp(tmp_path):
     }))
 
     nexus.Deployer(cfg).prune_mcps(
-        {"always"},
+        [{"name": "always"}],
         {"mcps": {"managed": [{"name": "always"}]}},
     )
 
@@ -523,7 +630,7 @@ def test_lockfile_records_only_actual_managed_mcps(tmp_path):
 
     lock = nexus.generate_lockfile([], manifest, [], tmp_path)
 
-    assert lock["mcps"]["managed"] == [{"name": "always"}]
+    assert lock["mcps"]["managed"] == [{"name": "always", "targets": []}]
 
 
 def test_lockfile_records_accepted_optional_mcps(tmp_path):
@@ -539,8 +646,51 @@ def test_lockfile_records_accepted_optional_mcps(tmp_path):
     )
 
     assert lock["mcps"]["managed"] == [
-        {"name": "always"},
-        {"name": "github", "optional": True},
+        {"name": "always", "targets": []},
+        {"name": "github", "targets": [], "optional": True},
+    ]
+
+
+def test_lockfile_records_per_mcp_targets():
+    targets = ["claude", "cursor", "antigravity", "codex"]
+    lock = nexus.generate_lockfile(
+        [],
+        {},
+        targets,
+        managed_mcps=[{
+            "name": "browser",
+            "targets": ["claude", "cursor", "antigravity"],
+        }],
+    )
+
+    assert lock["mcps"]["managed"] == [{
+        "name": "browser",
+        "targets": ["claude", "cursor", "antigravity"],
+    }]
+
+
+def test_lockfile_mcp_target_serialization_is_deterministic(monkeypatch):
+    class FixedDatetime:
+        @staticmethod
+        def now(_timezone):
+            from datetime import datetime
+
+            return datetime.fromisoformat("2026-07-20T00:00:00+00:00")
+
+    monkeypatch.setattr(nexus, "datetime", FixedDatetime)
+    targets = ["claude", "cursor", "antigravity", "codex"]
+    mcps = [
+        {"name": "browser", "targets": ["claude", "cursor", "antigravity"]},
+        {"name": "all-hosts"},
+    ]
+
+    first = nexus.generate_lockfile([], {}, targets, managed_mcps=mcps)
+    second = nexus.generate_lockfile([], {}, targets, managed_mcps=mcps)
+
+    assert first == second
+    assert first["mcps"]["managed"] == [
+        {"name": "browser", "targets": ["claude", "cursor", "antigravity"]},
+        {"name": "all-hosts", "targets": targets},
     ]
 
 
@@ -617,6 +767,52 @@ def test_package_targets_canonicalize_aliases_and_preserve_constraints():
     assert nexus.package_targets(pkg, ["claude"]) == ["claude"]
     assert nexus.package_targets({"targets": ["openai-codex"]}, ["claude"]) == []
     assert nexus.package_targets({"targets": ["*"]}, ["claude", "hermes"]) == ["claude", "hermes"]
+
+
+def test_mcp_targets_canonicalize_aliases_and_preserve_constraints():
+    mcp = {"targets": ["claude-code", "cursor", "google-antigravity"]}
+
+    assert nexus.mcp_targets(mcp, nexus.CORE_DEFAULT_TARGETS) == ["claude", "cursor", "antigravity"]
+    assert nexus.mcp_targets(mcp, ["claude", "codex"]) == ["claude"]
+    assert nexus.mcp_targets({}, ["claude", "codex"]) == ["claude", "codex"]
+    assert nexus.mcp_targets({}, ["claude", "hermes", "codex"]) == ["claude", "codex"]
+    assert nexus.mcp_targets({"targets": ["*"]}, ["claude", "hermes", "codex"]) == ["claude", "codex"]
+
+
+def test_manifest_validation_rejects_unknown_mcp_target():
+    errors = nexus.validate_dashboard_manifest({
+        "targets": ["claude", "codex"],
+        "mcps": [{"name": "example", "command": "example", "targets": ["unknown-host"]}],
+    })
+
+    assert errors == [{
+        "field": "mcps[0].targets[0]",
+        "message": "Unknown target 'unknown-host'. See docs/targets.md for supported targets.",
+    }]
+
+
+def test_manifest_validation_rejects_mcp_target_without_implemented_writer():
+    errors = nexus.validate_dashboard_manifest({
+        "targets": ["claude", "hermes"],
+        "mcps": [{"name": "example", "command": "example", "targets": ["hermes"]}],
+    })
+
+    assert errors == [{
+        "field": "mcps[0].targets[0]",
+        "message": "Target 'hermes' does not have an implemented MCP writer.",
+    }]
+
+
+def test_manifest_validation_rejects_duplicate_canonical_mcp_target():
+    errors = nexus.validate_dashboard_manifest({
+        "targets": ["claude"],
+        "mcps": [{"name": "example", "command": "example", "targets": ["claude", "claude-code"]}],
+    })
+
+    assert errors == [{
+        "field": "mcps[0].targets[1]",
+        "message": "Duplicate MCP target resolves to 'claude'.",
+    }]
 
 
 def test_overlay_targets_canonicalize_aliases(tmp_path):
@@ -859,6 +1055,29 @@ def test_dry_run_mentions_skill_overlays(tmp_path, capsys):
 
     captured = capsys.readouterr()
     assert "skill: example -> codex (overlay: agents_openai)" in captured.err
+
+
+def test_doctor_does_not_warn_for_filtered_target_without_mcp_config(tmp_path, capsys):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.targets = ["codex"]
+    cfg.data = {"packages": [], "mcps": [], "targets": cfg.targets}
+    cfg.mcp_path = lambda _target: tmp_path / "missing-codex-mcp.toml"
+    nexus.write_lockfile({
+        "lockfile_version": 1,
+        "packages": [],
+        "mcps": {
+            "managed": [{
+                "name": "browser",
+                "targets": ["claude", "cursor", "antigravity"],
+            }],
+        },
+    }, cfg.lockfile_path)
+
+    nexus.cmd_doctor(cfg, SimpleNamespace())
+
+    captured = capsys.readouterr()
+    assert "codex MCP config: not required, 0 Nexus-managed" in captured.err
+    assert "codex MCP config: not found" not in captured.err
 
 
 def test_doctor_validates_generated_skill_overlays(tmp_path, capsys):
@@ -1142,6 +1361,28 @@ def test_dashboard_model_includes_inventory_and_redacts_mcp_env(tmp_path):
     assert model["mcps"][0]["token_consumption"]["static_tokens"] > 0
     assert "supersecret" not in encoded
     assert model["skills"][0]["static_tokens"] > 0
+
+
+def test_dashboard_model_uses_per_target_mcp_lock_ownership(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.targets = ["claude", "cursor"]
+    cfg.data = {"packages": [], "mcps": [], "targets": cfg.targets}
+    cfg.yml_path.write_text("targets: [claude, cursor]\n")
+    paths = {target: tmp_path / f"{target}.json" for target in cfg.targets}
+    for path in paths.values():
+        path.write_text(json.dumps({"mcpServers": {"browser": {"command": "browser"}}}))
+    cfg.mcp_path = lambda target: paths[target]
+    nexus.write_lockfile({
+        "mcps": {"managed": [{"name": "browser", "targets": ["claude"]}]},
+        "packages": [],
+    }, cfg.lockfile_path)
+
+    model = nexus.build_dashboard_model(cfg)
+    targets = {target["id"]: target for target in model["targets"]}
+
+    assert targets["claude"]["mcp"]["managed_present"] == ["browser"]
+    assert targets["cursor"]["mcp"]["managed_present"] == []
+    assert targets["cursor"]["mcp"]["managed_missing"] == []
 
 
 def test_dashboard_model_handles_missing_lockfile(tmp_path):
@@ -1476,6 +1717,28 @@ def test_audit_json_redacts_env_values_and_classifies_mcp_servers(tmp_path):
     assert model["targets"][0]["mcp"]["unmanaged"] == ["user"]
     assert servers["managed"]["env_keys"] == ["TOKEN"]
     assert "secret-value" not in encoded
+
+
+def test_audit_uses_per_target_mcp_lock_ownership(tmp_path):
+    cfg = _fake_cfg(tmp_path, tmp_path / "codex-home")
+    cfg.targets = ["claude", "cursor"]
+    cfg.data = {"packages": [], "mcps": [], "targets": cfg.targets}
+    cfg.yml_path.write_text("targets: [claude, cursor]\n")
+    paths = {target: tmp_path / f"{target}.json" for target in cfg.targets}
+    for path in paths.values():
+        path.write_text(json.dumps({"mcpServers": {"browser": {"command": "browser"}}}))
+    cfg.mcp_path = lambda target: paths[target]
+    nexus.write_lockfile({
+        "mcps": {"managed": [{"name": "browser", "targets": ["claude"]}]},
+    }, cfg.lockfile_path)
+
+    model = nexus.build_audit_model(cfg)
+    targets = {target["name"]: target for target in model["targets"]}
+
+    assert targets["claude"]["mcp"]["managed"] == ["browser"]
+    assert targets["claude"]["mcp"]["unmanaged"] == []
+    assert targets["cursor"]["mcp"]["managed"] == []
+    assert targets["cursor"]["mcp"]["unmanaged"] == ["browser"]
 
 
 def test_audit_codex_managed_block_and_hooks(tmp_path):

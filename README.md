@@ -209,14 +209,14 @@ Use `--no-open` when you want the server URL without automatically opening a bro
 
 ## Browser tooling policy
 
-Keep browser and desktop access narrow and intentional, using this routing order:
+Keep browser and desktop access narrow and intentional. Route directly by task type and host rather than treating this list as a mandatory waterfall:
 
 1. Use built-in **WebSearch/WebFetch** for ordinary research and static page retrieval.
 2. Use a pinned existing-profile browser MCP such as **Playwriter** for dynamic or authenticated work in explicit task-owned pages. General workflows may keep multiple persistent page handles and navigate to arbitrary HTTP(S) destinations; fixed sensitive operations must use an explicit selected/pinned page. A Nexus target filter controls host discovery, not page attachment or runtime authority.
 3. Use **Chrome DevTools MCP** only for focused Lighthouse, performance-trace, Core Web Vitals, heap, console, or network diagnostics. Keep task-local diagnostics in native project configuration rather than Nexus-managed by default.
-4. Use **Peekaboo** only as the final native macOS desktop fallback when the browser layer cannot address browser chrome, windows, menus, dialogs, permissions, or non-browser applications.
+4. When the browser layer cannot address browser chrome, windows, menus, dialogs, permissions, or non-browser applications, use vanilla **Open Computer Use** on Claude Code, Cursor, or Antigravity and Codex's native computer-use capability. Per-MCP target filters keep Codex excluded.
 
-Retired bridges such as **Kimi WebBridge** stay absent from the manifest, managed targets, and local runtime unless a fresh explicit install and security review approves their return. Use exactly one browser or desktop controller at a time.
+Retired controllers and bridges such as **Peekaboo** and **Kimi WebBridge** stay absent from the manifest, managed targets, and local runtime unless a fresh explicit install and security review approves their return. Use exactly one browser or desktop controller at a time.
 
 Use an MCP-level `targets` filter when a reusable server belongs on only a subset of the configured MCP-capable hosts. Package-level `targets` still controls package assets such as skills and does not implicitly filter a separate MCP declaration. Repository-only MCPs remain in native project configuration because MCP target filters select hosts, not repositories.
 

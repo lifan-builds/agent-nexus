@@ -1,5 +1,7 @@
 # Agent Nexus
 
+> **Archived (2026-08-11):** Agent Nexus is retired and no longer an active deployment authority. The complete repository was moved to `/Users/lfan/Project/archive/agent-nexus` for historical rollback only. Codex uses native user/project configuration and owning-repository skills; do not run new syncs from this archive without an explicit reviewed restoration.
+
 <p align="center">
   <img src="docs/assets/nexus-icon.svg" alt="Agent Nexus icon" width="96" height="96">
 </p>
